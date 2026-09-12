@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Clone</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+    <link rel="stylesheet" href="mathanoshtoh.css">
+</head>
+<body>
+    <div class="main-container">
+        <aside class="sidebar">
+            <div class="logo">
+                <i class="fab fa-spotify"></i>
+                <span>Spotify</span>
+            </div>
+
+            <nav class="nav-links">
+                <a href="#" class="active"><i class="fas fa-home"></i> Home</a>
+                <a href="#"><i class="fas fa-search"></i> Search</a>
+                <a href="#"><i class="fas fa-book"></i> Your Library</a>
+            </nav>
+
+            <div class="library-box">
+                <div class="library-header">
+                    <h3>Your Library</h3>
+                    <button class="icon-btn" aria-label="Add playlist"><i class="fas fa-plus"></i></button>
+                </div>
+
+                <div class="library-empty">
+                    <p class="box-title">Create your first playlist</p>
+                    <p class="box-subtitle">It's easy, we'll help you</p>
+                    <button class="badge-btn">Create playlist</button>
+                </div>
+
+                <div class="library-list">
+                    <div class="list-item active-item">
+                        <span class="list-tag">Liked Songs</span>
+                        <span class="list-count">2,112</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="list-tag">Daily Mix 1</span>
+                        <span class="list-count">23 songs</span>
+                    </div>
+                    <div class="list-item">
+                        <span class="list-tag">Chill Mix</span>
+                        <span class="list-count">12 songs</span>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <header class="top-nav">
+                <div class="nav-arrows">
+                    <i class="fas fa-chevron-left"></i>
+                    <i class="fas fa-chevron-right"></i>
+                </div>
+
+                <div class="user-actions">
+                    <button class="badge-btn premium-btn">Explore Premium</button>
+                    <button class="user-icon" aria-label="User profile"><i class="fas fa-user"></i></button>
+                </div>
+            </header>
+
+            <section class="greeting-section">
+                <h2>Good evening</h2>
+                <div class="greeting-grid">
+                    <article class="mini-card">
+                        <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=300&q=80" alt="Liked songs cover">
+                        <div>
+                            <h4>Liked Songs</h4>
+                            <span>2,112 songs</span>
+                        </div>
+                    </article>
+
+                    <article class="mini-card">
+                        <img src="https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=300&q=80" alt="Daily mix cover">
+                        <div>
+                            <h4>Daily Mix 1</h4>
+                            <span>Drake, The Weeknd...</span>
+                        </div>
+                    </article>
+
+                    <article class="mini-card">
+                        <img src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?auto=format&fit=crop&w=300&q=80" alt="Chill mix cover">
+                        <div>
+                            <h4>Chill Mix</h4>
+                            <span>Lo-fi and mellow</span>
+                        </div>
+                    </article>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>Featured Playlists</h2>
+                    <a href="#">Show all</a>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1511379938547-c1f69419868d?auto=format&fit=crop&w=400&q=80" alt="Today's Top Hits cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>Today's Top Hits</h4>
+                        <p>Jung Kook is on top of the Hottest 50!</p>
+                    </div>
+
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?auto=format&fit=crop&w=400&q=80" alt="Chill Vibes cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>Chill Vibes</h4>
+                        <p>Kick back and relax with these lo-fi beats.</p>
+                    </div>
+
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1496293455970-f8581aae0e3b?auto=format&fit=crop&w=400&q=80" alt="Rock Classics cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>Rock Classics</h4>
+                        <p>Legends never die. Heavy rock anthems.</p>
+                    </div>
+
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1506157786151-b8491531f063?auto=format&fit=crop&w=400&q=80" alt="Focus flow cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>Focus Flow</h4>
+                        <p>Deep work, calm beats, and clean focus.</p>
+                    </div>
+                </div>
+            </section>
+
+            <section class="content-section">
+                <div class="section-header">
+                    <h2>Made for You</h2>
+                    <a href="#">Show all</a>
+                </div>
+
+                <div class="card-grid">
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=400&q=80" alt="After Hours cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>After Hours</h4>
+                        <p>Night drives and late-night energy.</p>
+                    </div>
+
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1525201548942-d8732f6617a0?auto=format&fit=crop&w=400&q=80" alt="Indie Pop cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>Indie Pop</h4>
+                        <p>Fresh sounds from the underground scene.</p>
+                    </div>
+
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=400&q=80" alt="Summer Hits cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>Summer Hits</h4>
+                        <p>Bright, warm, and impossible to ignore.</p>
+                    </div>
+
+                    <div class="card">
+                        <img src="https://images.unsplash.com/photo-1520367745676-5f3222f3f7ad?auto=format&fit=crop&w=400&q=80" alt="Acoustic cover">
+                        <div class="play-btn-hover"><i class="fas fa-play"></i></div>
+                        <h4>Acoustic Mood</h4>
+                        <p>Gentle songs for a slow, easy day.</p>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <footer class="music-player">
+        <div class="now-playing">
+            <img src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=200&q=80" alt="Current Song Cover">
+            <div class="track-info">
+                <h5>Seven (feat. Latto)</h5>
+                <p>Jung Kook</p>
+            </div>
+            <i class="far fa-heart heart-icon"></i>
+        </div>
+
+        <div class="player-controls">
+            <div class="control-buttons">
+                <i class="fas fa-shuffle"></i>
+                <i class="fas fa-backward-step"></i>
+                <i class="fas fa-circle-play main-play"></i>
+                <i class="fas fa-forward-step"></i>
+                <i class="fas fa-repeat"></i>
+            </div>
+
+            <div class="progress-bar-container">
+                <span>1:24</span>
+                <div class="progress-bar"><div class="progress-fill"></div></div>
+                <span>3:45</span>
+            </div>
+        </div>
+
+        <div class="volume-controls">
+            <i class="fas fa-microphone"></i>
+            <i class="fas fa-layer-group"></i>
+            <i class="fas fa-volume-low"></i>
+            <div class="volume-bar"><div class="volume-fill"></div></div>
+        </div>
+    </footer>
+</body>
+</html>
+
