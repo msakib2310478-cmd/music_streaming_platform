@@ -1,8 +1,8 @@
 <?php
-$host = 'localhost';
-$dbName = 'music_streaming_db';
-$dbUser = 'root';
-$dbPass = '';
+$host = getenv('MUSIC_DB_HOST') ?: '127.0.0.1';
+$dbName = getenv('MUSIC_DB_NAME') ?: 'music_streaming_db';
+$dbUser = getenv('MUSIC_DB_USER') ?: 'music_app';
+$dbPass = getenv('MUSIC_DB_PASS') ?: 'music_app_local';
 
 try {
     $pdo = new PDO(
@@ -16,6 +16,7 @@ try {
         ]
     );
 } catch (PDOException $e) {
-    die('Database connection failed: ' . $e->getMessage());
+    error_log('Database connection failed: ' . $e->getMessage());
+    die('Database connection failed. Check the server configuration.');
 }
 ?>

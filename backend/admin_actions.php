@@ -1,6 +1,5 @@
 <?php
-require __DIR__ . '/auth.php';
-require __DIR__ . '/db.php';
+require_once __DIR__ . '/functions.php';
 
 requireRole('admin', '../frontend/admin-login.html');
 
@@ -9,7 +8,29 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+verifyCsrf($_POST['csrf_token'] ?? null);
+
 $action = $_POST['action'] ?? '';
+
+if ($action === 'delete_album') {
+    $albumId = (int)($_POST['album_id'] ?? 0);
+    if ($albumId > 0) {
+        $stmt = $pdo->prepare('DELETE FROM albums WHERE album_id = :album_id');
+        $stmt->execute(['album_id' => $albumId]);
+    }
+    header('Location: admin-dashboard.php?msg=album_deleted');
+    exit;
+}
+
+if ($action === 'delete_track') {
+    $trackId = (int)($_POST['track_id'] ?? 0);
+    if ($trackId > 0) {
+        $stmt = $pdo->prepare('DELETE FROM tracks WHERE track_id = :track_id');
+        $stmt->execute(['track_id' => $trackId]);
+    }
+    header('Location: admin-dashboard.php?msg=track_deleted');
+    exit;
+}
 
 if ($action === 'delete_user') {
     $userId = (int)($_POST['user_id'] ?? 0);
@@ -64,16 +85,46 @@ if ($action === 'add_track') {
     $title = trim($_POST['track_title'] ?? '');
     $duration = (int)($_POST['duration_seconds'] ?? 0);
     $trackNumber = (int)($_POST['track_number'] ?? 0);
-    $explicit = isset($_POST['explicit']) ? 1 : 0;
+    $explicit = (int)($_POST['explicit'] ?? 0) === 1 ? 1 : 0;
+    $audioUrl = null;
+
+    if (isset($_FILES['audio_file']) && $_FILES['audio_file']['error'] !== UPLOAD_ERR_NO_FILE) {
+        if ($_FILES['audio_file']['error'] !== UPLOAD_ERR_OK || $_FILES['audio_file']['size'] > 50 * 1024 * 1024) {
+            throw new RuntimeException('Audio upload failed or exceeds the 50 MB limit.');
+        }
+
+        $allowedMimeTypes = [
+            'audio/mpeg' => 'mp3',
+            'audio/wav' => 'wav',
+            'audio/x-wav' => 'wav',
+            'audio/ogg' => 'ogg',
+            'audio/mp4' => 'm4a',
+        ];
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($_FILES['audio_file']['tmp_name']);
+        if (!isset($allowedMimeTypes[$mimeType])) {
+            throw new RuntimeException('Unsupported audio format.');
+        }
+
+        $uploadDirectory = __DIR__ . '/uploads/audio';
+        if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0750, true) && !is_dir($uploadDirectory)) {
+            throw new RuntimeException('Audio upload directory could not be created.');
+        }
+        $fileName = bin2hex(random_bytes(16)) . '.' . $allowedMimeTypes[$mimeType];
+        if (!move_uploaded_file($_FILES['audio_file']['tmp_name'], $uploadDirectory . '/' . $fileName)) {
+            throw new RuntimeException('Audio file could not be stored.');
+        }
+        $audioUrl = 'uploads/audio/' . $fileName;
+    }
 
     if ($albumId > 0 && $title !== '') {
-        $stmt = $pdo->prepare('INSERT INTO tracks (album_id, title, duration_seconds, explicit, track_number) VALUES (:album_id, :title, :duration_seconds, :explicit, :track_number)');
+        $stmt = $pdo->prepare('INSERT INTO tracks (album_id, title, duration_seconds, explicit, track_number, audio_url) VALUES (:album_id, :title, :duration_seconds, :explicit, :track_number, :audio_url)');
         $stmt->execute([
             ':album_id' => $albumId,
             ':title' => $title,
             ':duration_seconds' => $duration,
             ':explicit' => $explicit,
             ':track_number' => $trackNumber,
+            ':audio_url' => $audioUrl,
         ]);
     }
 

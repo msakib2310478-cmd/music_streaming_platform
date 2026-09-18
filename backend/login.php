@@ -1,5 +1,5 @@
 <?php
-session_start();
+require __DIR__ . '/auth.php';
 require __DIR__ . '/db.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

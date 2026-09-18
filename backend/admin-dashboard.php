@@ -1,6 +1,5 @@
 <?php
-require __DIR__ . '/../backend/auth.php';
-require __DIR__ . '/../backend/db.php';
+require_once __DIR__ . '/functions.php';
 
 requireRole('admin', '../frontend/admin-login.html');
 
@@ -8,6 +7,13 @@ $users = $pdo->query("SELECT user_id, username, email, subscription_type, role, 
 $artists = $pdo->query("SELECT artist_id, artist_name, genre, country FROM artists ORDER BY artist_name ASC")->fetchAll();
 $albums = $pdo->query("SELECT a.album_id, a.title, ar.artist_name, a.release_date, a.album_type FROM albums a JOIN artists ar ON ar.artist_id = a.artist_id ORDER BY a.title ASC")->fetchAll();
 $tracks = $pdo->query("SELECT t.track_id, t.title, a.title AS album_title, t.duration_seconds, t.explicit, t.track_number FROM tracks t JOIN albums a ON a.album_id = t.album_id ORDER BY a.title ASC, t.track_number ASC")->fetchAll();
+$stats = $pdo->query("SELECT (SELECT COUNT(*) FROM users) total_users, (SELECT COUNT(*) FROM artists) total_artists, (SELECT COUNT(*) FROM albums) total_albums, (SELECT COUNT(*) FROM tracks) total_tracks, (SELECT COUNT(*) FROM playlists) total_playlists, (SELECT COUNT(*) FROM stream_history) total_streams, (SELECT COUNT(*) FROM favorites) total_favorites, (SELECT COUNT(*) FROM ratings) total_ratings")->fetch();
+$weeklyStreams = (int)$pdo->query("SELECT COUNT(*) FROM stream_history WHERE played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY")->fetchColumn();
+$monthlyStreams = (int)$pdo->query("SELECT COUNT(*) FROM stream_history WHERE played_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY")->fetchColumn();
+$topWeekly = $pdo->query("SELECT t.title, ar.artist_name, COUNT(*) stream_count FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY GROUP BY t.track_id, t.title, ar.artist_name ORDER BY stream_count DESC LIMIT 5")->fetchAll();
+$deviceUsage = $pdo->query("SELECT COALESCE(device_type, 'unknown') device_type, COUNT(*) stream_count FROM stream_history GROUP BY device_type ORDER BY stream_count DESC")->fetchAll();
+$genreUsage = $pdo->query("SELECT g.genre_name, COUNT(sh.stream_id) stream_count FROM genres g JOIN track_genres tg ON tg.genre_id = g.genre_id JOIN stream_history sh ON sh.track_id = tg.track_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY GROUP BY g.genre_id, g.genre_name ORDER BY stream_count DESC")->fetchAll();
+$activeListeners = $pdo->query("SELECT u.username, COUNT(sh.stream_id) stream_count FROM users u JOIN stream_history sh ON sh.user_id = u.user_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY GROUP BY u.user_id, u.username ORDER BY stream_count DESC LIMIT 10")->fetchAll();
 
 $msg = $_GET['msg'] ?? '';
 ?>
@@ -309,16 +315,40 @@ $msg = $_GET['msg'] ?? '';
       <section class="cards">
         <div class="card">
           <h3>Total Users</h3>
-          <strong><?php echo count($users); ?></strong>
+          <strong><?php echo (int)$stats['total_users']; ?></strong>
         </div>
         <div class="card">
           <h3>Artists</h3>
-          <strong><?php echo count($artists); ?></strong>
+          <strong><?php echo (int)$stats['total_artists']; ?></strong>
         </div>
         <div class="card">
           <h3>Tracks</h3>
-          <strong><?php echo count($tracks); ?></strong>
+          <strong><?php echo (int)$stats['total_tracks']; ?></strong>
         </div>
+        <div class="card"><h3>Streams</h3><strong><?php echo (int)$stats['total_streams']; ?></strong></div>
+        <div class="card"><h3>Favorites</h3><strong><?php echo (int)$stats['total_favorites']; ?></strong></div>
+        <div class="card"><h3>Ratings</h3><strong><?php echo (int)$stats['total_ratings']; ?></strong></div>
+      </section>
+
+      <section class="section" id="analytics">
+        <h2>Analytics</h2>
+        <p>Streams this week: <strong><?php echo $weeklyStreams; ?></strong> · Streams this month: <strong><?php echo $monthlyStreams; ?></strong></p>
+        <h3>Top tracks this week</h3>
+        <table><thead><tr><th>Track</th><th>Artist</th><th>Streams</th></tr></thead><tbody>
+          <?php foreach ($topWeekly as $row): ?><tr><td><?php echo htmlspecialchars($row['title']); ?></td><td><?php echo htmlspecialchars($row['artist_name']); ?></td><td><?php echo (int)$row['stream_count']; ?></td></tr><?php endforeach; ?>
+        </tbody></table>
+        <h3>Device usage</h3>
+        <table><thead><tr><th>Device</th><th>Streams</th></tr></thead><tbody>
+          <?php foreach ($deviceUsage as $row): ?><tr><td><?php echo htmlspecialchars($row['device_type']); ?></td><td><?php echo (int)$row['stream_count']; ?></td></tr><?php endforeach; ?>
+        </tbody></table>
+        <h3>Monthly genre distribution</h3>
+        <table><thead><tr><th>Genre</th><th>Streams</th></tr></thead><tbody>
+          <?php foreach ($genreUsage as $row): ?><tr><td><?php echo htmlspecialchars($row['genre_name']); ?></td><td><?php echo (int)$row['stream_count']; ?></td></tr><?php endforeach; ?>
+        </tbody></table>
+        <h3>Most active listeners this month</h3>
+        <table><thead><tr><th>User</th><th>Streams</th></tr></thead><tbody>
+          <?php foreach ($activeListeners as $row): ?><tr><td><?php echo htmlspecialchars($row['username']); ?></td><td><?php echo (int)$row['stream_count']; ?></td></tr><?php endforeach; ?>
+        </tbody></table>
       </section>
 
       <section class="section" id="users">
@@ -347,6 +377,7 @@ $msg = $_GET['msg'] ?? '';
                 <td>
                   <?php if (($user['role'] ?? '') !== 'admin'): ?>
                     <form action="../backend/admin_actions.php" method="POST" onsubmit="return confirm('Delete this user?');">
+                      <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
                       <input type="hidden" name="action" value="delete_user">
                       <input type="hidden" name="user_id" value="<?php echo (int)$user['user_id']; ?>">
                       <button class="btn danger" type="submit">Delete</button>
@@ -361,7 +392,8 @@ $msg = $_GET['msg'] ?? '';
 
       <section class="section" id="artists">
         <h2>Add Artist</h2>
-        <form class="grid" action="../backend/admin_actions.php" method="POST">
+        <form class="grid" action="../backend/admin_actions.php" method="POST" enctype="multipart/form-data">
+          <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
           <input type="hidden" name="action" value="add_artist">
           <div class="field">
             <label>Artist Name</label>
@@ -405,6 +437,7 @@ $msg = $_GET['msg'] ?? '';
       <section class="section" id="albums">
         <h2>Add Album</h2>
         <form class="grid" action="../backend/admin_actions.php" method="POST">
+          <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
           <input type="hidden" name="action" value="add_album">
           <div class="field">
             <label>Artist</label>
@@ -439,6 +472,7 @@ $msg = $_GET['msg'] ?? '';
               <th>Artist</th>
               <th>Release</th>
               <th>Type</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -449,6 +483,7 @@ $msg = $_GET['msg'] ?? '';
                 <td><?php echo htmlspecialchars($album['artist_name']); ?></td>
                 <td><?php echo htmlspecialchars($album['release_date'] ?? '-'); ?></td>
                 <td><?php echo htmlspecialchars($album['album_type'] ?? '-'); ?></td>
+                <td><form action="../backend/admin_actions.php" method="POST" onsubmit="return confirm('Delete this album and its tracks?');"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="delete_album"><input type="hidden" name="album_id" value="<?php echo (int)$album['album_id']; ?>"><button class="btn danger" type="submit">Delete</button></form></td>
               </tr>
             <?php endforeach; ?>
           </tbody>
@@ -458,6 +493,7 @@ $msg = $_GET['msg'] ?? '';
       <section class="section" id="tracks">
         <h2>Add Track</h2>
         <form class="grid" action="../backend/admin_actions.php" method="POST">
+          <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
           <input type="hidden" name="action" value="add_track">
           <div class="field">
             <label>Album</label>
@@ -486,6 +522,10 @@ $msg = $_GET['msg'] ?? '';
               <option value="1">Yes</option>
             </select>
           </div>
+          <div class="field">
+            <label>Audio file</label>
+            <input type="file" name="audio_file" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4">
+          </div>
           <div class="field" style="justify-content:end;">
             <button class="btn primary" type="submit">Add Track</button>
           </div>
@@ -500,6 +540,7 @@ $msg = $_GET['msg'] ?? '';
               <th>Duration</th>
               <th>Explicit</th>
               <th>Track #</th>
+              <th>Action</th>
             </tr>
           </thead>
           <tbody>
@@ -511,6 +552,7 @@ $msg = $_GET['msg'] ?? '';
                 <td><?php echo (int)$track['duration_seconds']; ?>s</td>
                 <td><?php echo ($track['explicit'] ? 'Yes' : 'No'); ?></td>
                 <td><?php echo (int)$track['track_number']; ?></td>
+                <td><form action="../backend/admin_actions.php" method="POST" onsubmit="return confirm('Delete this track?');"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="delete_track"><input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>"><button class="btn danger" type="submit">Delete</button></form></td>
               </tr>
             <?php endforeach; ?>
           </tbody>

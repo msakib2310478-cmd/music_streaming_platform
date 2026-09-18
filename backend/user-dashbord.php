@@ -1,4 +1,6 @@
 <?php
+require __DIR__ . '/home.php';
+exit;
 require __DIR__ . '/../backend/auth.php';
 requireRole('user', '../frontend/user-login.html');
 ?>
