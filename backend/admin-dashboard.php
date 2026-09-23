@@ -15,7 +15,8 @@ $deviceUsage = $pdo->query("SELECT COALESCE(device_type, 'unknown') device_type,
 $genreUsage = $pdo->query("SELECT g.genre_name, COUNT(sh.stream_id) stream_count FROM genres g JOIN track_genres tg ON tg.genre_id = g.genre_id JOIN stream_history sh ON sh.track_id = tg.track_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY GROUP BY g.genre_id, g.genre_name ORDER BY stream_count DESC")->fetchAll();
 $activeListeners = $pdo->query("SELECT u.username, COUNT(sh.stream_id) stream_count FROM users u JOIN stream_history sh ON sh.user_id = u.user_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY GROUP BY u.user_id, u.username ORDER BY stream_count DESC LIMIT 10")->fetchAll();
 
-$msg = $_GET['msg'] ?? '';
+$msg = $_GET['msg'] ?? ($_SESSION['success'] ?? $_SESSION['error'] ?? '');
+unset($_SESSION['success'], $_SESSION['error']);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -392,7 +393,7 @@ $msg = $_GET['msg'] ?? '';
 
       <section class="section" id="artists">
         <h2>Add Artist</h2>
-        <form class="grid" action="../backend/admin_actions.php" method="POST" enctype="multipart/form-data">
+        <form class="grid" action="../backend/admin_actions.php" method="POST">
           <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
           <input type="hidden" name="action" value="add_artist">
           <div class="field">
@@ -436,7 +437,7 @@ $msg = $_GET['msg'] ?? '';
 
       <section class="section" id="albums">
         <h2>Add Album</h2>
-        <form class="grid" action="../backend/admin_actions.php" method="POST">
+        <form class="grid" action="../backend/admin_actions.php" method="POST" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
           <input type="hidden" name="action" value="add_album">
           <div class="field">
@@ -492,7 +493,7 @@ $msg = $_GET['msg'] ?? '';
 
       <section class="section" id="tracks">
         <h2>Add Track</h2>
-        <form class="grid" action="../backend/admin_actions.php" method="POST">
+        <form class="grid" action="../backend/admin_actions.php" method="POST" enctype="multipart/form-data">
           <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
           <input type="hidden" name="action" value="add_track">
           <div class="field">
@@ -524,7 +525,7 @@ $msg = $_GET['msg'] ?? '';
           </div>
           <div class="field">
             <label>Audio file</label>
-            <input type="file" name="audio_file" accept="audio/mpeg,audio/wav,audio/ogg,audio/mp4">
+            <input type="file" name="audio_file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/mp4" required>
           </div>
           <div class="field" style="justify-content:end;">
             <button class="btn primary" type="submit">Add Track</button>

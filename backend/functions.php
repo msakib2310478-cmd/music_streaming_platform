@@ -40,7 +40,7 @@ function verifyCsrf(?string $token): void
 
 function trackQuery(): string
 {
-    return 'SELECT t.track_id, t.title, t.duration_seconds, t.audio_url, t.cover_image, '
+    return 'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image, '
         . 't.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover, '
         . 'ar.artist_id, ar.artist_name FROM tracks t '
         . 'JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id';

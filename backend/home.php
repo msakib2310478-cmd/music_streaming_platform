@@ -9,12 +9,19 @@ $queries = [
     'liked' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, COUNT(f.user_id) AS metric FROM favorites f JOIN tracks t ON t.track_id = f.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name ORDER BY metric DESC, t.title LIMIT 10",
     'rated' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, AVG(r.rating) AS average_rating, COUNT(r.user_id) AS rating_count FROM ratings r JOIN tracks t ON t.track_id = r.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name HAVING COUNT(r.user_id) >= 2 ORDER BY average_rating DESC, rating_count DESC, t.title LIMIT 10",
     'recent' => "SELECT DISTINCT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, MAX(sh.played_at) AS last_played FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE sh.user_id = :user_id GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name ORDER BY last_played DESC LIMIT 10",
+    'latest' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id ORDER BY t.track_id DESC LIMIT 10",
 ];
 $sections = [];
 foreach ($queries as $name => $sql) {
     $stmt = $pdo->prepare($sql);
     $stmt->execute($name === 'recent' ? ['user_id' => $userId] : []);
     $sections[$name] = $stmt->fetchAll();
+}
+$recentTrackIds = array_column($sections['recent'], 'track_id');
+foreach ($sections['latest'] as $track) {
+    if (!in_array($track['track_id'], $recentTrackIds, true)) {
+        $sections['recent'][] = $track;
+    }
 }
 $newReleases = $pdo->query("SELECT al.album_id, al.title, al.cover_image, al.release_date, ar.artist_name FROM albums al JOIN artists ar ON ar.artist_id = al.artist_id WHERE al.release_date IS NOT NULL ORDER BY al.release_date DESC LIMIT 8")->fetchAll();
 $ratedAlbums = $pdo->query("SELECT al.album_id, al.title, al.cover_image, ar.artist_name, AVG(r.rating) average_rating, COUNT(r.user_id) rating_count FROM albums al JOIN artists ar ON ar.artist_id = al.artist_id JOIN tracks t ON t.album_id = al.album_id JOIN ratings r ON r.track_id = t.track_id GROUP BY al.album_id, al.title, al.cover_image, ar.artist_name HAVING COUNT(r.user_id) >= 2 ORDER BY average_rating DESC, rating_count DESC LIMIT 8")->fetchAll();

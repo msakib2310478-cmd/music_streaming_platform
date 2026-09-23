@@ -4,24 +4,10 @@ requireUser();
 $query = trim($_GET['q'] ?? ''); $artists = $albums = $tracks = $genres = [];
 if ($query !== '') {
     $like = '%' . $query . '%';
-
-    $stmt = $pdo->prepare('SELECT artist_id, artist_name, country FROM artists WHERE artist_name LIKE :artist_name_q OR genre LIKE :genre_q ORDER BY artist_name LIMIT 20');
-    $stmt->execute(['artist_name_q' => $like, 'genre_q' => $like]);
-    $artists = $stmt->fetchAll();
-
-    $stmt = $pdo->prepare('SELECT al.album_id, al.title, ar.artist_name FROM albums al JOIN artists ar ON ar.artist_id = al.artist_id WHERE al.title LIKE :album_title_q OR ar.artist_name LIKE :album_artist_q ORDER BY al.title LIMIT 20');
-    $stmt->execute(['album_title_q' => $like, 'album_artist_q' => $like]);
-    $albums = $stmt->fetchAll();
-
-    $stmt = $pdo->prepare(trackQuery() . ' WHERE t.title LIKE :track_title_q OR ar.artist_name LIKE :track_artist_q OR al.title LIKE :track_album_q ORDER BY t.title LIMIT 30');
-    $stmt->execute(['track_title_q' => $like, 'track_artist_q' => $like, 'track_album_q' => $like]);
-    $tracks = $stmt->fetchAll();
-
-    $stmt = $pdo->prepare('SELECT genre_id, genre_name FROM genres WHERE genre_name LIKE :genre_name_q ORDER BY genre_name');
-    $stmt->execute(['genre_name_q' => $like]);
-    $genres = $stmt->fetchAll();
-
-    $log = $pdo->prepare('INSERT INTO search_history (user_id, search_query) VALUES (:user_id, :query)');
-    $log->execute(['user_id' => currentUserId(), 'query' => $query]);
+    $stmt = $pdo->prepare('SELECT artist_id, artist_name, country FROM artists WHERE artist_name LIKE :artist_name OR genre LIKE :artist_genre ORDER BY artist_name LIMIT 20'); $stmt->execute(['artist_name' => $like, 'artist_genre' => $like]); $artists = $stmt->fetchAll();
+    $stmt = $pdo->prepare('SELECT al.album_id, al.title, ar.artist_name FROM albums al JOIN artists ar ON ar.artist_id = al.artist_id WHERE al.title LIKE :album_title OR ar.artist_name LIKE :album_artist ORDER BY al.title LIMIT 20'); $stmt->execute(['album_title' => $like, 'album_artist' => $like]); $albums = $stmt->fetchAll();
+    $stmt = $pdo->prepare(trackQuery() . ' WHERE t.title LIKE :track_title OR ar.artist_name LIKE :track_artist OR al.title LIKE :track_album ORDER BY t.title LIMIT 30'); $stmt->execute(['track_title' => $like, 'track_artist' => $like, 'track_album' => $like]); $tracks = $stmt->fetchAll();
+    $stmt = $pdo->prepare('SELECT genre_id, genre_name FROM genres WHERE genre_name LIKE :q ORDER BY genre_name'); $stmt->execute(['q' => $like]); $genres = $stmt->fetchAll();
+    $log = $pdo->prepare('INSERT INTO search_history (user_id, search_query) VALUES (:user_id, :query)'); $log->execute(['user_id' => currentUserId(), 'query' => $query]);
 }
 ?><!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Search</title><link rel="stylesheet" href="../frontend/user-dashbord.css"><style>.page{max-width:1000px;margin:auto}.panel{background:var(--bg-card);padding:24px;border-radius:14px;margin:20px 0}.row{padding:13px 0;border-bottom:1px solid var(--border)}.muted{color:var(--text-muted)}input{padding:12px;width:min(600px,100%)}button{padding:12px;background:var(--spotify-green);border:0;border-radius:8px}a{color:inherit}</style></head><body><main class="main-content page"><p><a href="user-dashbord.php">Home</a></p><section class="panel"><form><input name="q" value="<?php echo e($query); ?>" placeholder="Search tracks, artists, albums, genres"><button>Search</button></form></section><?php foreach ([['Artists',$artists,'artist.php','artist_id','artist_name'],['Albums',$albums,'album.php','album_id','title'],['Tracks',$tracks,'track.php','track_id','title'],['Genres',$genres,'genre.php','genre_id','genre_name']] as [$heading,$items,$url,$idKey,$nameKey]): ?><section class="panel"><h2><?php echo $heading; ?></h2><?php foreach ($items as $item): ?><div class="row"><a href="<?php echo $url; ?>?id=<?php echo (int)$item[$idKey]; ?>"><?php echo e($item[$nameKey]); ?></a><?php if (isset($item['artist_name'])): ?> <span class="muted">- <?php echo e($item['artist_name']); ?></span><?php endif; ?></div><?php endforeach; ?><?php if (!$items && $query !== ''): ?><p class="muted">No matches.</p><?php endif; ?></section><?php endforeach; ?></main></body></html>
