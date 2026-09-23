@@ -1,0 +1,5 @@
+backend/uploads/audio/*
+!backend/uploads/audio/.gitkeep
+.env
+.env.*
+!.env.example
