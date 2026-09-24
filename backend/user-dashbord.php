@@ -403,27 +403,50 @@ requireRole('user', '../frontend/user-login.html');
 
         @media (max-width: 980px) {
             .main-container {
-                grid-template-columns: 1fr;
+                grid-template-columns: 260px 1fr !important;
             }
             .sidebar {
-                border-right: none;
-                border-bottom: 1px solid var(--line);
+                border-right: 1px solid var(--line) !important;
+                border-bottom: none !important;
             }
             .greeting-grid,
             .card-grid {
-                grid-template-columns: repeat(2, minmax(180px, 1fr));
+                grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
             }
         }
 
         @media (max-width: 620px) {
             .greeting-grid,
             .card-grid {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
             }
             .music-player {
-                flex-wrap: wrap;
-                height: auto;
+                flex-wrap: nowrap !important;
+                height: 90px !important;
             }
+        }
+
+        /* Force desktop layout everywhere */
+        html, body {
+            min-width: 1100px;
+        }
+
+        body {
+            overflow-x: auto;
+        }
+
+        .main-container {
+            grid-template-columns: 260px 1fr !important;
+        }
+
+        .sidebar {
+            border-right: 1px solid var(--line) !important;
+            border-bottom: none !important;
+        }
+
+        .greeting-grid,
+        .card-grid {
+            grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
         }
     </style>
 </head>

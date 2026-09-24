@@ -276,9 +276,31 @@ unset($_SESSION['success'], $_SESSION['error']);
     }
 
     @media (max-width: 900px) {
-      .layout { display:block; }
-      .sidebar { width:auto; border-right:none; border-bottom:1px solid var(--line); }
-      .cards { grid-template-columns:1fr; }
+      .layout { display:flex !important; }
+      .sidebar { width:260px !important; border-right:1px solid var(--line) !important; border-bottom:none !important; }
+      .cards { grid-template-columns: repeat(3, minmax(180px, 1fr)) !important; }
+    }
+
+    /* Force desktop layout everywhere */
+    html, body {
+      min-width: 1100px;
+    }
+
+    body {
+      overflow-x: auto;
+    }
+
+    .layout {
+      display:flex !important;
+    }
+
+    .sidebar {
+      width: 260px !important;
+      border-right:1px solid var(--line) !important;
+    }
+
+    .cards {
+      grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
     }
   </style>
 </head>
