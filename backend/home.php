@@ -61,6 +61,10 @@ unset($_SESSION['success'], $_SESSION['error']);
         .album-row { display:flex; gap:14px; align-items:center; padding:10px 0; border-bottom:1px solid var(--border); color:inherit; text-decoration:none; }
         .album-row img { width:56px; height:56px; object-fit:cover; border-radius:8px; }
         .empty { color:var(--text-muted); }
+        .search-result-group { display:block; margin:0 0 28px; padding:24px; background:rgba(255,255,255,0.035); border:1px solid var(--border); border-radius:14px; }
+        .search-result-group h2 { margin:0 0 18px; line-height:1.2; }
+        .search-result-row { display:block; min-height:0; padding:14px 4px; border-bottom:1px solid var(--border); line-height:1.5; }
+        .search-result-row:last-child { border-bottom:0; }
         .nav-left { display:flex; align-items:center; gap:14px; }
         .home-btn { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:999px; background:rgba(255,255,255,0.06); color:var(--text-white); text-decoration:none; border:1px solid var(--border); font-weight:700; }
         .home-btn:hover { background:rgba(255,255,255,0.1); }
@@ -179,22 +183,22 @@ unset($_SESSION['success'], $_SESSION['error']);
             </div>
 
             <nav class="nav-links">
-                <a href="user-dashbord.php" class="active"><i class="fas fa-home"></i> Home</a>
-                <a href="search.php"><i class="fas fa-search"></i> Search</a>
-                <a href="favorites.php"><i class="fas fa-heart"></i> Favorites <span class="list-count"><?php echo $favoriteCount; ?></span></a>
-                <a href="playlists.php"><i class="fas fa-book"></i> Playlists</a>
-                <a href="subscriptions.php"><i class="fas fa-crown"></i> Subscription</a>
+                <a href="user-dashbord.php" class="active" data-dashboard-link><i class="fas fa-home"></i> Home</a>
+                <a href="#search" data-search-trigger><i class="fas fa-search"></i> Search</a>
+                <a href="favorites.php" data-dashboard-link><i class="fas fa-heart"></i> Favorites <span class="list-count"><?php echo $favoriteCount; ?></span></a>
+                <a href="playlists.php" data-dashboard-link><i class="fas fa-book"></i> Playlists</a>
+                <a href="subscriptions.php" data-dashboard-link><i class="fas fa-crown"></i> Subscription</a>
                 <a href="../backend/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
             </nav>
 
             <div class="library-box">
                 <div class="library-header">
                     <h3>Your Playlists</h3>
-                    <a class="icon-btn" href="playlists.php" aria-label="Manage playlists"><i class="fas fa-plus"></i></a>
+                    <a class="icon-btn" href="playlists.php" data-dashboard-link aria-label="Manage playlists"><i class="fas fa-plus"></i></a>
                 </div>
 
                 <?php foreach ($playlists as $playlist): ?>
-                    <a class="list-item" href="playlist.php?id=<?php echo (int)$playlist['playlist_id']; ?>">
+                    <a class="list-item" href="playlist.php?id=<?php echo (int)$playlist['playlist_id']; ?>" data-dashboard-link>
                         <span><?php echo e($playlist['playlist_name']); ?></span>
                     </a>
                 <?php endforeach; ?>
@@ -208,16 +212,15 @@ unset($_SESSION['success'], $_SESSION['error']);
         <main class="main-content">
             <header class="top-nav">
                 <div class="nav-left">
-                    <a class="home-btn" href="user-dashbord.php"><i class="fas fa-house"></i> Home</a>
+                    <a class="home-btn" href="user-dashbord.php" data-dashboard-link><i class="fas fa-house"></i> Home</a>
                     <div class="nav-arrows">
                         <button type="button" class="nav-arrow-btn" aria-label="Go back" data-nav="back"><i class="fas fa-chevron-left"></i></button>
                         <button type="button" class="nav-arrow-btn" aria-label="Go forward" data-nav="forward"><i class="fas fa-chevron-right"></i></button>
                     </div>
                 </div>
 
-                <form class="top-search" action="search.php" method="get">
+                <form class="top-search" action="search.php" method="get" data-dashboard-search>
                     <div class="search-shell">
-                        <i class="fas fa-search"></i>
                         <input type="text" name="q" placeholder="What do you want to play?" aria-label="Search songs, albums, artists">
                         <button type="submit" aria-label="Search">
                             <i class="fas fa-magnifying-glass"></i>
@@ -249,18 +252,19 @@ unset($_SESSION['success'], $_SESSION['error']);
                 </div>
             </header>
 
-            <?php if ($message): ?>
-                <div class="alert <?php echo $messageType === 'error' ? 'error' : ''; ?>"><?php echo e($message); ?></div>
-            <?php endif; ?>
+            <div id="dashboard-view">
+                <?php if ($message): ?>
+                    <div class="alert <?php echo $messageType === 'error' ? 'error' : ''; ?>"><?php echo e($message); ?></div>
+                <?php endif; ?>
 
-            <section class="greeting-section">
+                <section class="greeting-section">
                 <h2>Welcome back, <?php echo e($_SESSION['username'] ?? 'User'); ?></h2>
                 <div class="feature-bar">
-                    <a href="recently-played.php">Recently Played</a>
-                    <a href="followed-artists.php">Followed Artists</a>
-                    <a href="recommendations.php">Recommended For You</a>
+                    <a href="recently-played.php" data-dashboard-link>Recently Played</a>
+                    <a href="followed-artists.php" data-dashboard-link>Followed Artists</a>
+                    <a href="recommendations.php" data-dashboard-link>Recommended For You</a>
                 </div>
-            </section>
+                </section>
 
             <section class="content-section">
                 <div class="section-header">
@@ -268,7 +272,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                 </div>
                 <div class="genre-list">
                     <?php foreach ($genres as $genre): ?>
-                        <a class="genre-pill" href="genre.php?id=<?php echo (int)$genre['genre_id']; ?>"><?php echo e($genre['genre_name']); ?></a>
+                        <a class="genre-pill" href="genre.php?id=<?php echo (int)$genre['genre_id']; ?>" data-dashboard-link><?php echo e($genre['genre_name']); ?></a>
                     <?php endforeach; ?>
                 </div>
             </section>
@@ -331,6 +335,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <?php endforeach; ?>
                 </div>
             </section>
+            </div>
         </main>
     </div>
 
@@ -360,8 +365,105 @@ unset($_SESSION['success'], $_SESSION['error']);
     <script>
         const audio = document.getElementById('audio-player');
         const progress = document.getElementById('player-progress');
+        const dashboardView = document.getElementById('dashboard-view');
+        let dashboardRequest = 0;
         let currentTrack = 0;
         let streamSent = false;
+
+        const setActiveDashboardLink = url => {
+            const target = new URL(url, window.location.href).pathname;
+            document.querySelectorAll('[data-dashboard-link]').forEach(link => {
+                link.classList.toggle('active', new URL(link.href, window.location.href).pathname === target);
+            });
+        };
+
+        const loadDashboardView = async (url, pushState = true) => {
+            const requestId = ++dashboardRequest;
+            dashboardView.classList.add('is-loading');
+
+            try {
+                const response = await fetch(url, {
+                    cache: 'no-store',
+                    headers: { 'X-Requested-With': 'dashboard-view' }
+                });
+                if (!response.ok) throw new Error('Unable to load dashboard view.');
+
+                const documentView = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const nextView = documentView.querySelector('.main-content.page, #dashboard-view');
+                if (!nextView) throw new Error('Dashboard view is unavailable.');
+                if (requestId !== dashboardRequest) return;
+
+                dashboardView.innerHTML = nextView.innerHTML;
+                const embeddedBreadcrumb = dashboardView.querySelector('p:first-child a[href="user-dashbord.php"]');
+                embeddedBreadcrumb?.parentElement.remove();
+                setActiveDashboardLink(url);
+                if (pushState) history.pushState({ dashboardUrl: url }, '', url);
+                dashboardView.scrollTop = 0;
+            } catch (error) {
+                dashboardView.innerHTML = '<div class="alert error">Unable to load this section. Please try again.</div>';
+            } finally {
+                dashboardView.classList.remove('is-loading');
+            }
+        };
+
+        document.addEventListener('click', event => {
+            const searchTrigger = event.target.closest('[data-search-trigger]');
+            if (searchTrigger && event.button === 0 && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) {
+                event.preventDefault();
+                const searchInput = document.querySelector('[data-dashboard-search] input[name="q"]');
+                searchInput?.focus();
+                return;
+            }
+
+            const link = event.target.closest('[data-dashboard-link]');
+            if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            event.preventDefault();
+            loadDashboardView(link.href);
+        });
+
+        document.addEventListener('submit', async event => {
+            const form = event.target.closest('[data-dashboard-form]');
+            if (!form) return;
+
+            event.preventDefault();
+            form.querySelectorAll('button').forEach(button => {
+                button.disabled = true;
+            });
+
+            try {
+                const response = await fetch(new URL(form.getAttribute('action'), window.location.href), {
+                    method: form.method || 'POST',
+                    body: new FormData(form),
+                    cache: 'no-store',
+                    redirect: 'follow'
+                });
+
+                if (response.redirected || response.ok) {
+                    await loadDashboardView(window.location.href, false);
+                } else {
+                    throw new Error('Playlist update request failed.');
+                }
+            } catch (error) {
+                dashboardView.innerHTML = '<div class="alert error">Unable to update this playlist. Please try again.</div>';
+            } finally {
+                form.querySelectorAll('button').forEach(button => {
+                    button.disabled = false;
+                });
+            }
+        });
+
+        document.querySelector('[data-dashboard-search]').addEventListener('submit', event => {
+            event.preventDefault();
+            const form = event.currentTarget;
+            const url = new URL(form.action, window.location.href);
+            const query = new FormData(form).get('q');
+            if (query) url.searchParams.set('q', query);
+            loadDashboardView(url.href);
+        });
+
+        window.addEventListener('popstate', event => {
+            loadDashboardView(event.state?.dashboardUrl || window.location.href, false);
+        });
 
         const formatTime = s => {
             s = Math.floor(s || 0);

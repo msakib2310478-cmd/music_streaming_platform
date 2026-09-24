@@ -197,6 +197,176 @@ button, a {
     border-radius: 10px;
 }
 
+.main-content #dashboard-view .panel {
+    background: var(--bg-card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+    margin: 0 0 24px;
+}
+
+.main-content #dashboard-view .panel h2 {
+    margin: 0 0 18px;
+    font-size: 1.35rem;
+}
+
+.main-content #dashboard-view .row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 52px;
+    padding: 15px 4px;
+    border-bottom: 1px solid var(--border);
+    line-height: 1.5;
+}
+
+.main-content #dashboard-view .row:last-child {
+    border-bottom: 0;
+}
+
+.main-content #dashboard-view .row a {
+    font-weight: 600;
+}
+
+.main-content #dashboard-view .row a:hover {
+    color: var(--spotify-green);
+}
+
+.main-content #dashboard-view .muted {
+    line-height: 1.5;
+}
+
+.search-result-group {
+    display: block;
+    margin: 0 0 28px !important;
+    padding: 24px !important;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.search-result-group h2 {
+    margin: 0 0 18px !important;
+    line-height: 1.2;
+}
+
+.search-result-row {
+    display: block !important;
+    min-height: 0 !important;
+    padding: 14px 4px !important;
+    line-height: 1.5;
+}
+
+.search-result-row + .search-result-row {
+    margin-top: 2px;
+}
+
+.playlist-panel {
+    padding: 28px !important;
+}
+
+.playlist-panel h1 {
+    margin: 0 0 8px;
+    line-height: 1.2;
+}
+
+.playlist-visibility {
+    margin: 0 0 24px;
+}
+
+.playlist-form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 0 0 18px;
+}
+
+.playlist-form input:not([type="hidden"]),
+.playlist-form select {
+    min-height: 40px;
+    padding: 8px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg-light-grey);
+    color: var(--text-white);
+}
+
+.playlist-form button,
+.playlist-track-row button {
+    min-height: 40px;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 8px;
+    background: var(--spotify-green);
+    color: var(--bg-black);
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.playlist-track-row {
+    align-items: center;
+    min-height: 56px !important;
+    padding: 14px 4px !important;
+}
+
+.playlist-track-row > a {
+    flex: 1;
+    line-height: 1.5;
+}
+
+.playlist-track-row > .muted {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+}
+
+/* Pages rendered by user_pages.php inside the dashboard. */
+.main-content #dashboard-view > p:first-child {
+    margin: 0 0 14px;
+}
+
+.main-content #dashboard-view > h1 {
+    margin: 0 0 24px;
+    line-height: 1.2;
+}
+
+.main-content #dashboard-view > .panel {
+    display: block;
+    padding: 28px !important;
+    margin: 0 0 24px !important;
+    background: rgba(255, 255, 255, 0.035);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+}
+
+.main-content #dashboard-view > .panel form {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.main-content #dashboard-view > .panel .row {
+    min-height: 56px;
+    padding: 16px 4px;
+    line-height: 1.5;
+}
+
+.main-content #dashboard-view > .panel .row:last-child {
+    border-bottom: 0;
+}
+
+.main-content #dashboard-view > .panel h1 {
+    margin: 0 0 8px;
+    line-height: 1.2;
+}
+
+.main-content #dashboard-view > .panel > p.muted {
+    margin: 0 0 24px;
+}
+
 .top-nav {
     display: flex;
     justify-content: space-between;
