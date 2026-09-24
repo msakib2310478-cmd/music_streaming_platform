@@ -223,7 +223,12 @@ button, a {
     align-items: center;
     justify-content: center;
     color: var(--text-muted);
-    cursor: not-allowed;
+    cursor: pointer;
+}
+
+.nav-arrows button,
+.nav-arrow-btn {
+    cursor: pointer;
 }
 
 .user-actions {
