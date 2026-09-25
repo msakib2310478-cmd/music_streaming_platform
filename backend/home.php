@@ -188,7 +188,7 @@ unset($_SESSION['success'], $_SESSION['error']);
             <nav class="nav-links">
                 <a href="user-dashbord.php" class="active" data-dashboard-link><i class="fas fa-home"></i> Home</a>
                 <a href="#search" data-search-trigger><i class="fas fa-search"></i> Search</a>
-                <a href="favorites.php" data-dashboard-link><i class="fas fa-heart"></i> Favorites <span class="list-count"><?php echo $favoriteCount; ?></span></a>
+                <a href="favorites.php" data-dashboard-link><i class="fas fa-heart"></i> Favorites <span class="list-count" id="favorite-count"><?php echo $favoriteCount; ?></span></a>
                 <a href="playlists.php" data-dashboard-link><i class="fas fa-book"></i> Playlists</a>
                 <a href="subscriptions.php" data-dashboard-link><i class="fas fa-crown"></i> Subscription</a>
                 <a href="../backend/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -292,10 +292,10 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <div class="card-grid">
                         <?php foreach ($sections[$key] as $track): ?>
                             <article class="card">
-                                <a href="track.php?id=<?php echo (int)$track['track_id']; ?>">
+                                <a href="track.php?id=<?php echo (int)$track['track_id']; ?>" class="play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>">
                                     <img src="<?php echo e($track['cover_image'] ?: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=400&q=80'); ?>" alt="<?php echo e($track['title']); ?> cover">
                                 </a>
-                                <h4><?php echo e($track['title']); ?></h4>
+                                <h4><a href="track.php?id=<?php echo (int)$track['track_id']; ?>" class="play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>"><?php echo e($track['title']); ?></a></h4>
                                 <p><?php echo e($track['artist_name']); ?></p>
                                 <div class="card-actions">
                                     <button class="small-action play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>" title="Play"><i class="fas fa-play"></i></button>
@@ -355,7 +355,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <input type="hidden" name="action" value="favorite">
                     <input type="hidden" name="track_id" value="0">
                     <input type="hidden" name="redirect" value="user-dashbord.php">
-                    <button type="submit" class="like-toggle" title="Add to liked songs" aria-label="Add to liked songs" disabled>
+                    <button type="submit" class="like-toggle" title="Add to liked songs" aria-label="Add to liked songs">
                         <i class="fa-regular fa-heart"></i>
                     </button>
                 </form>
@@ -392,6 +392,8 @@ unset($_SESSION['success'], $_SESSION['error']);
         const favoriteForm = document.querySelector('[data-player-favorite]');
         const favoriteTrackInput = favoriteForm?.querySelector('input[name="track_id"]');
         const favoriteButton = favoriteForm?.querySelector('.like-toggle');
+        const playerPlayButton = document.getElementById('player-play');
+        const playerPlayIcon = playerPlayButton?.querySelector('i');
         const dashboardView = document.getElementById('dashboard-view');
         let dashboardRequest = 0;
         let currentTrack = 0;
@@ -399,14 +401,18 @@ unset($_SESSION['success'], $_SESSION['error']);
         const likedTrackIds = new Set(<?php echo json_encode(array_keys($favoriteTrackIds)); ?>);
 
         const updateFavoriteButtonState = () => {
-            if (!favoriteForm || !favoriteTrackInput || !favoriteButton) return;
-            const trackId = String(favoriteTrackInput.value || '0');
-            const isLiked = likedTrackIds.has(trackId) && trackId !== '0';
-            favoriteButton.disabled = trackId === '0';
-            favoriteButton.classList.toggle('liked', isLiked);
-            const icon = favoriteButton.querySelector('i');
-            icon.classList.toggle('fa-solid', isLiked);
-            icon.classList.toggle('fa-regular', !isLiked);
+            const playerTrackId = String(favoriteTrackInput?.value || '0');
+            document.querySelectorAll('.like-toggle').forEach(button => {
+                const trackId = playerTrackId;
+                const isLiked = likedTrackIds.has(trackId) && trackId !== '0';
+                button.classList.toggle('liked', isLiked);
+                const icon = button.querySelector('i');
+                icon?.classList.toggle('fa-solid', isLiked);
+                icon?.classList.toggle('fa-regular', !isLiked);
+                button.setAttribute('aria-pressed', isLiked ? 'true' : 'false');
+                button.title = isLiked ? 'Remove from liked songs' : 'Add to liked songs';
+                button.setAttribute('aria-label', button.title);
+            });
         };
 
         const setActiveDashboardLink = url => {
@@ -425,14 +431,13 @@ unset($_SESSION['success'], $_SESSION['error']);
                     cache: 'no-store',
                     headers: { 'X-Requested-With': 'dashboard-view' }
                 });
-                if (!response.ok) throw new Error('Unable to load dashboard view.');
-
                 const documentView = new DOMParser().parseFromString(await response.text(), 'text/html');
-                const nextView = documentView.querySelector('.main-content.page, #dashboard-view');
+                const nextView = documentView.querySelector('#dashboard-view, .main-content.page, main');
                 if (!nextView) throw new Error('Dashboard view is unavailable.');
                 if (requestId !== dashboardRequest) return;
 
                 dashboardView.innerHTML = nextView.innerHTML;
+                dashboardView.querySelectorAll('.top-nav').forEach(header => header.remove());
                 const embeddedBreadcrumb = dashboardView.querySelector('p:first-child a[href="user-dashbord.php"]');
                 embeddedBreadcrumb?.parentElement.remove();
                 setActiveDashboardLink(url);
@@ -509,43 +514,27 @@ unset($_SESSION['success'], $_SESSION['error']);
             return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
         };
 
-        favoriteForm?.addEventListener('submit', async (event) => {
-            event.preventDefault();
-            if (!favoriteTrackInput || !favoriteTrackInput.value || Number(favoriteTrackInput.value) <= 0) return;
-
-            const formData = new FormData(favoriteForm);
-            const response = await fetch(favoriteForm.action, {
-                method: 'POST',
-                body: new URLSearchParams(formData)
-            });
-
-            if (response.ok || response.redirected) {
-                const trackId = String(favoriteTrackInput.value);
-                if (likedTrackIds.has(trackId)) {
-                    likedTrackIds.delete(trackId);
-                } else {
-                    likedTrackIds.add(trackId);
-                }
-                updateFavoriteButtonState();
+        const playTrack = button => {
+            if (!button.dataset.audioUrl) {
+                alert('This demo track has no audio file yet.');
+                return;
             }
-        });
 
-        document.querySelectorAll('.play-track').forEach(button => {
-            button.addEventListener('click', () => {
-                if (!button.dataset.audioUrl) {
-                    alert('This demo track has no audio file yet.');
-                    return;
-                }
+            currentTrack = Number(button.dataset.trackId) || 0;
+            streamSent = false;
+            favoriteTrackInput.value = String(currentTrack);
+            updateFavoriteButtonState();
+            audio.src = button.dataset.audioUrl;
+            document.getElementById('player-title').textContent = button.dataset.title;
+            document.getElementById('player-artist').textContent = button.dataset.artist;
+            audio.play().catch(() => {});
+        };
 
-                currentTrack = Number(button.dataset.trackId) || 0;
-                streamSent = false;
-                favoriteTrackInput.value = String(currentTrack);
-                updateFavoriteButtonState();
-                audio.src = button.dataset.audioUrl;
-                document.getElementById('player-title').textContent = button.dataset.title;
-                document.getElementById('player-artist').textContent = button.dataset.artist;
-                audio.play().catch(() => {});
-            });
+        document.addEventListener('click', event => {
+            const playButton = event.target.closest('.play-track');
+            if (!playButton) return;
+            event.preventDefault();
+            playTrack(playButton);
         });
 
         document.querySelectorAll('.nav-arrow-btn').forEach(button => {
@@ -574,9 +563,23 @@ unset($_SESSION['success'], $_SESSION['error']);
             });
         }
 
-        document.getElementById('player-play').addEventListener('click', () => {
+        playerPlayButton?.addEventListener('click', () => {
             audio.paused ? audio.play() : audio.pause();
         });
+
+        const updatePlayButtonState = () => {
+            if (!playerPlayIcon) return;
+            const isPlaying = !audio.paused && !audio.ended;
+            playerPlayIcon.classList.toggle('fa-circle-play', !isPlaying);
+            playerPlayIcon.classList.toggle('fa-circle-pause', isPlaying);
+            playerPlayButton.setAttribute('aria-label', isPlaying ? 'Pause' : 'Play');
+            playerPlayButton.setAttribute('title', isPlaying ? 'Pause' : 'Play');
+        };
+
+        audio.addEventListener('play', updatePlayButtonState);
+        audio.addEventListener('pause', updatePlayButtonState);
+        audio.addEventListener('ended', updatePlayButtonState);
+        updatePlayButtonState();
 
         if (volume) {
             audio.volume = Number(volume.value) / 100;

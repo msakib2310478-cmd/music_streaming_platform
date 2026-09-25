@@ -430,7 +430,10 @@ if ($query !== '') {
 
                 <?php foreach ($items as $item): ?>
                     <div class="row search-result-row">
-                        <a href="<?php echo $url; ?>?id=<?php echo (int)$item[$idKey]; ?>">
+                        <a
+                            href="<?php echo $url; ?>?id=<?php echo (int)$item[$idKey]; ?>"
+                            <?php if ($heading === 'Tracks'): ?>class="play-track" data-track-id="<?php echo (int)$item['track_id']; ?>" data-audio-url="<?php echo e($item['audio_url']); ?>" data-title="<?php echo e($item['title']); ?>" data-artist="<?php echo e($item['artist_name']); ?>"<?php else: ?>data-dashboard-link<?php endif; ?>
+                        >
                             <?php echo e($item[$nameKey]); ?>
                         </a>
 

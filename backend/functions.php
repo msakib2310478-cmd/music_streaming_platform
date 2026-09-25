@@ -46,6 +46,65 @@ function trackQuery(): string
         . 'JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id';
 }
 
+function storeUploadedAudio(array $file): string
+{
+    if (($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+        throw new InvalidArgumentException('Choose an audio file.');
+    }
+
+    if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+        $uploadErrors = [
+            UPLOAD_ERR_INI_SIZE => 'The audio file is larger than PHP upload_max_filesize.',
+            UPLOAD_ERR_FORM_SIZE => 'The uploaded audio file is too large for the form.',
+            UPLOAD_ERR_PARTIAL => 'The audio upload was interrupted. Please try again.',
+            UPLOAD_ERR_NO_TMP_DIR => 'PHP temporary upload storage is unavailable.',
+            UPLOAD_ERR_CANT_WRITE => 'The server could not write the uploaded audio file.',
+            UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the audio upload.',
+        ];
+        throw new RuntimeException($uploadErrors[$file['error']] ?? 'Audio upload failed.');
+    }
+
+    if (($file['size'] ?? 0) > 35 * 1024 * 1024) {
+        throw new RuntimeException('The audio file must be smaller than 35 MB.');
+    }
+
+    $allowedMimeTypes = [
+        'audio/mp3' => 'mp3',
+        'audio/mpeg' => 'mp3',
+        'audio/x-mpeg' => 'mp3',
+        'audio/mpeg3' => 'mp3',
+        'audio/x-mpeg-3' => 'mp3',
+        'audio/mpg' => 'mp3',
+        'audio/x-mp3' => 'mp3',
+        'audio/mpa' => 'mp3',
+        'application/x-id3' => 'mp3',
+        'application/x-id3v2' => 'mp3',
+        'audio/wav' => 'wav',
+        'audio/x-wav' => 'wav',
+        'audio/ogg' => 'ogg',
+        'audio/mp4' => 'm4a',
+    ];
+    $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
+    $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    if (!isset($allowedMimeTypes[$mimeType]) && $extension === 'mp3') {
+        $mimeType = 'audio/mpeg';
+    }
+    if (!isset($allowedMimeTypes[$mimeType])) {
+        throw new RuntimeException('Unsupported audio format detected: ' . $mimeType);
+    }
+
+    $uploadDirectory = __DIR__ . '/uploads/audio';
+    if (!is_dir($uploadDirectory) && !mkdir($uploadDirectory, 0750, true) && !is_dir($uploadDirectory)) {
+        throw new RuntimeException('Audio upload directory could not be created.');
+    }
+    $fileName = bin2hex(random_bytes(16)) . '.' . $allowedMimeTypes[$mimeType];
+    if (!move_uploaded_file($file['tmp_name'], $uploadDirectory . '/' . $fileName)) {
+        throw new RuntimeException('Audio file could not be stored.');
+    }
+
+    return 'uploads/audio/' . $fileName;
+}
+
 function fetchTracks(PDO $pdo, string $orderBy, int $limit = 10, array $params = []): array
 {
     $limit = max(1, min($limit, 100));

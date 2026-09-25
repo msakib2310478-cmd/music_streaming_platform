@@ -6,7 +6,7 @@ requireRole('admin', '../frontend/admin-login.html');
 $users = $pdo->query("SELECT user_id, username, email, subscription_type, role, created_at FROM users ORDER BY created_at DESC")->fetchAll();
 $artists = $pdo->query("SELECT artist_id, artist_name, genre, country FROM artists ORDER BY artist_name ASC")->fetchAll();
 $albums = $pdo->query("SELECT a.album_id, a.title, ar.artist_name, a.release_date, a.album_type FROM albums a JOIN artists ar ON ar.artist_id = a.artist_id ORDER BY a.title ASC")->fetchAll();
-$tracks = $pdo->query("SELECT t.track_id, t.title, a.title AS album_title, t.duration_seconds, t.explicit, t.track_number FROM tracks t JOIN albums a ON a.album_id = t.album_id ORDER BY a.title ASC, t.track_number ASC")->fetchAll();
+$tracks = $pdo->query("SELECT t.track_id, t.title, a.title AS album_title, t.duration_seconds, t.explicit, t.track_number, t.audio_url FROM tracks t JOIN albums a ON a.album_id = t.album_id ORDER BY a.title ASC, t.track_number ASC")->fetchAll();
 $stats = $pdo->query("SELECT (SELECT COUNT(*) FROM users) total_users, (SELECT COUNT(*) FROM artists) total_artists, (SELECT COUNT(*) FROM albums) total_albums, (SELECT COUNT(*) FROM tracks) total_tracks, (SELECT COUNT(*) FROM playlists) total_playlists, (SELECT COUNT(*) FROM stream_history) total_streams, (SELECT COUNT(*) FROM favorites) total_favorites, (SELECT COUNT(*) FROM ratings) total_ratings")->fetch();
 $weeklyStreams = (int)$pdo->query("SELECT COUNT(*) FROM stream_history WHERE played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY")->fetchColumn();
 $monthlyStreams = (int)$pdo->query("SELECT COUNT(*) FROM stream_history WHERE played_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY")->fetchColumn();
@@ -575,7 +575,16 @@ unset($_SESSION['success'], $_SESSION['error']);
                 <td><?php echo (int)$track['duration_seconds']; ?>s</td>
                 <td><?php echo ($track['explicit'] ? 'Yes' : 'No'); ?></td>
                 <td><?php echo (int)$track['track_number']; ?></td>
-                <td><form action="../backend/admin_actions.php" method="POST" onsubmit="return confirm('Delete this track?');"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="delete_track"><input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>"><button class="btn danger" type="submit">Delete</button></form></td>
+                <td>
+                  <form action="../backend/admin_actions.php" method="POST" enctype="multipart/form-data" style="display:grid;gap:8px;min-width:190px;margin-bottom:8px;">
+                    <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
+                    <input type="hidden" name="action" value="replace_track_audio">
+                    <input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>">
+                    <input type="file" name="audio_file" accept="audio/mpeg,audio/mp3" required>
+                    <button class="btn primary" type="submit">Replace Audio</button>
+                  </form>
+                  <form action="../backend/admin_actions.php" method="POST" onsubmit="return confirm('Delete this track?');"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="delete_track"><input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>"><button class="btn danger" type="submit">Delete</button></form>
+                </td>
               </tr>
             <?php endforeach; ?>
           </tbody>

@@ -12,6 +12,7 @@ $action = $_POST['action'] ?? '';
 $trackId = filter_input(INPUT_POST, 'track_id', FILTER_VALIDATE_INT) ?: 0;
 $artistId = filter_input(INPUT_POST, 'artist_id', FILTER_VALIDATE_INT) ?: 0;
 $playlistId = filter_input(INPUT_POST, 'playlist_id', FILTER_VALIDATE_INT) ?: 0;
+$actionSucceeded = true;
 
 try {
     if ($action === 'favorite' && $trackId > 0) {
@@ -132,6 +133,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    $actionSucceeded = false;
     flash('error', 'The requested action could not be completed.');
 }
 
