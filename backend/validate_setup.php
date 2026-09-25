@@ -4,7 +4,12 @@ require_once __DIR__ . '/db.php';
 $requiredTables = [
     'users', 'artists', 'albums', 'tracks', 'playlists', 'stream_history',
     'genres', 'track_genres', 'playlist_tracks', 'favorites', 'artist_follows',
-    'ratings', 'search_history', 'subscriptions',
+    'ratings', 'search_history', 'subscriptions', 'playback_queue',
+    'playlist_collaborators', 'track_artists',
+];
+$requiredViews = [
+    'vw_user_listening_daily', 'vw_track_chart_metrics',
+    'vw_trending_tracks', 'vw_artist_dashboard_metrics',
 ];
 $requiredColumns = [
     'tracks' => ['audio_url', 'cover_image', 'lyrics'],
@@ -14,12 +19,21 @@ $requiredColumns = [
 ];
 
 $missingTables = [];
+$missingViews = [];
 $missingColumns = [];
-$tableCheck = $pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table_name');
+$tableCheck = $pdo->prepare('SELECT COUNT(*) FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table_name AND table_type = \'BASE TABLE\'');
 foreach ($requiredTables as $table) {
     $tableCheck->execute(['table_name' => $table]);
     if ((int)$tableCheck->fetchColumn() !== 1) {
         $missingTables[] = $table;
+    }
+}
+
+$viewCheck = $pdo->prepare('SELECT COUNT(*) FROM information_schema.views WHERE table_schema = DATABASE() AND table_name = :view_name');
+foreach ($requiredViews as $view) {
+    $viewCheck->execute(['view_name' => $view]);
+    if ((int)$viewCheck->fetchColumn() !== 1) {
+        $missingViews[] = $view;
     }
 }
 
@@ -33,10 +47,13 @@ foreach ($requiredColumns as $table => $columns) {
     }
 }
 
-if ($missingTables || $missingColumns) {
+if ($missingTables || $missingViews || $missingColumns) {
     fwrite(STDERR, "Database setup is incomplete.\n");
     if ($missingTables) {
         fwrite(STDERR, 'Missing tables: ' . implode(', ', $missingTables) . "\n");
+    }
+    if ($missingViews) {
+        fwrite(STDERR, 'Missing views: ' . implode(', ', $missingViews) . "\n");
     }
     if ($missingColumns) {
         fwrite(STDERR, 'Missing columns: ' . implode(', ', $missingColumns) . "\n");
@@ -44,4 +61,4 @@ if ($missingTables || $missingColumns) {
     exit(1);
 }
 
-echo 'Database setup is valid: ' . count($requiredTables) . " required tables and all required columns found.\n";
+echo 'Database setup is valid: ' . count($requiredTables) . " required tables, " . count($requiredViews) . " reporting views, and all required columns found.\n";

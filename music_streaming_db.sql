@@ -11,7 +11,7 @@
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
-SET time_zone = "+00:00";
+SET time_zone = "+06:00";
 
 
 /*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
@@ -636,6 +636,49 @@ WHERE NOT EXISTS (SELECT 1 FROM stream_history h WHERE h.session_id = CONCAT('de
 DROP TEMPORARY TABLE demo_track_pool;
 DROP TEMPORARY TABLE demo_user_pool;
 
+-- Playback queue, collaborative playlists, and multi-artist performer credits.
+CREATE TABLE IF NOT EXISTS playback_queue (
+  queue_id INT NOT NULL AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  track_id INT NOT NULL,
+  queue_position INT NOT NULL,
+  added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (queue_id),
+  KEY idx_playback_queue_user_position (user_id, queue_position),
+  KEY idx_playback_queue_track_id (track_id),
+  CONSTRAINT fk_playback_queue_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+  CONSTRAINT fk_playback_queue_track FOREIGN KEY (track_id) REFERENCES tracks (track_id) ON DELETE CASCADE,
+  CONSTRAINT chk_playback_queue_position CHECK (queue_position > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS playlist_collaborators (
+  playlist_id INT NOT NULL,
+  user_id INT NOT NULL,
+  invited_by INT NOT NULL,
+  added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (playlist_id, user_id),
+  KEY idx_playlist_collaborators_user_id (user_id),
+  CONSTRAINT fk_playlist_collaborators_playlist FOREIGN KEY (playlist_id) REFERENCES playlists (playlist_id) ON DELETE CASCADE,
+  CONSTRAINT fk_playlist_collaborators_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+  CONSTRAINT fk_playlist_collaborators_inviter FOREIGN KEY (invited_by) REFERENCES users (user_id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS track_artists (
+  track_id INT NOT NULL,
+  artist_id INT NOT NULL,
+  artist_role VARCHAR(30) NOT NULL DEFAULT 'primary',
+  display_order INT NOT NULL DEFAULT 1,
+  PRIMARY KEY (track_id, artist_id),
+  KEY idx_track_artists_artist_order (artist_id, display_order),
+  CONSTRAINT fk_track_artists_track FOREIGN KEY (track_id) REFERENCES tracks (track_id) ON DELETE CASCADE,
+  CONSTRAINT fk_track_artists_artist FOREIGN KEY (artist_id) REFERENCES artists (artist_id) ON DELETE CASCADE,
+  CONSTRAINT chk_track_artists_order CHECK (display_order > 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+INSERT IGNORE INTO track_artists (track_id, artist_id, artist_role, display_order)
+SELECT t.track_id, al.artist_id, 'primary', 1
+FROM tracks t JOIN albums al ON al.album_id = t.album_id;
+
 CREATE OR REPLACE VIEW vw_most_played_tracks AS
 SELECT t.track_id, t.title, ar.artist_name, COUNT(sh.stream_id) AS play_count
 FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id
@@ -689,6 +732,106 @@ SELECT ar.artist_id, ar.artist_name,
 FROM artists ar JOIN albums al ON al.artist_id = ar.artist_id
 JOIN tracks t ON t.album_id = al.album_id JOIN ratings r ON r.track_id = t.track_id
 GROUP BY ar.artist_id, ar.artist_name;
+
+-- Reporting indexes and live views for recommendations, analytics, charts, and artist reporting.
+DROP PROCEDURE IF EXISTS feature_reporting_index;
+DELIMITER $$
+CREATE PROCEDURE feature_reporting_index(
+  IN p_table_name VARCHAR(64),
+  IN p_index_name VARCHAR(64),
+  IN p_columns VARCHAR(255)
+)
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM information_schema.statistics
+    WHERE table_schema = DATABASE()
+      AND table_name = p_table_name
+      AND index_name = p_index_name
+  ) THEN
+    SET @feature_sql = CONCAT('ALTER TABLE `', p_table_name, '` ADD INDEX `', p_index_name, '` (', p_columns, ')');
+    PREPARE feature_stmt FROM @feature_sql;
+    EXECUTE feature_stmt;
+    DEALLOCATE PREPARE feature_stmt;
+  END IF;
+END$$
+DELIMITER ;
+
+CALL feature_reporting_index('track_genres', 'idx_track_genres_track_genre', '`track_id`, `genre_id`');
+CALL feature_reporting_index('ratings', 'idx_ratings_user_rated_at', '`user_id`, `rated_at`');
+CALL feature_reporting_index('favorites', 'idx_favorites_user_created_at', '`user_id`, `created_at`');
+CALL feature_reporting_index('artist_follows', 'idx_artist_follows_user_followed_at', '`user_id`, `followed_at`');
+DROP PROCEDURE feature_reporting_index;
+
+CREATE OR REPLACE VIEW vw_user_listening_daily AS
+SELECT sh.user_id, DATE(sh.played_at) AS play_date,
+     COUNT(*) AS plays,
+     COALESCE(SUM(COALESCE(sh.duration_played, t.duration_seconds)), 0) AS listening_seconds,
+     SUM(CASE WHEN sh.completed = TRUE THEN 1 ELSE 0 END) AS completed_plays
+FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id
+GROUP BY sh.user_id, DATE(sh.played_at);
+
+CREATE OR REPLACE VIEW vw_track_chart_metrics AS
+SELECT t.track_id, t.title, ar.artist_id, ar.artist_name,
+       (SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR ' & ')
+  FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id
+  WHERE ta2.track_id = t.track_id) AS artist_names,
+     COALESCE(s.total_plays, 0) AS total_plays,
+     COALESCE(s.today_plays, 0) AS today_plays,
+     COALESCE(s.week_plays, 0) AS week_plays,
+     COALESCE(s.month_plays, 0) AS month_plays,
+     COALESCE(f.favorite_count, 0) AS favorite_count,
+     r.average_rating, COALESCE(r.rating_count, 0) AS rating_count
+FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id
+LEFT JOIN (
+  SELECT sh.track_id, COUNT(*) AS total_plays,
+       SUM(CASE WHEN sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 1 DAY THEN 1 ELSE 0 END) AS today_plays,
+       SUM(CASE WHEN sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END) AS week_plays,
+       SUM(CASE WHEN sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 30 DAY THEN 1 ELSE 0 END) AS month_plays
+  FROM stream_history sh GROUP BY sh.track_id
+) s ON s.track_id = t.track_id
+LEFT JOIN (
+  SELECT track_id, COUNT(*) AS favorite_count FROM favorites GROUP BY track_id
+) f ON f.track_id = t.track_id
+LEFT JOIN (
+  SELECT track_id, AVG(rating) AS average_rating, COUNT(*) AS rating_count FROM ratings GROUP BY track_id
+) r ON r.track_id = t.track_id;
+
+CREATE OR REPLACE VIEW vw_trending_tracks AS
+SELECT t.track_id, t.title, ar.artist_id, ar.artist_name,
+       (SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR ' & ')
+  FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id
+  WHERE ta2.track_id = t.track_id) AS artist_names,
+     SUM(CASE WHEN sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END) AS recent_plays,
+     SUM(CASE WHEN sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END) AS previous_plays,
+     ROUND((SUM(CASE WHEN sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END)
+      - SUM(CASE WHEN sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END))
+      / GREATEST(SUM(CASE WHEN sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END), 1) * 100, 2) AS growth_percent
+FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id
+JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id
+WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 14 DAY
+GROUP BY t.track_id, t.title, ar.artist_id, ar.artist_name
+HAVING recent_plays > 0;
+
+CREATE OR REPLACE VIEW vw_artist_dashboard_metrics AS
+SELECT ar.artist_id, ar.artist_name,
+     COALESCE(f.followers, 0) AS followers,
+     COALESCE(s.total_streams, 0) AS total_streams,
+     r.average_rating, COALESCE(r.rating_count, 0) AS rating_count
+FROM artists ar
+LEFT JOIN (
+  SELECT artist_id, COUNT(*) AS followers FROM artist_follows GROUP BY artist_id
+) f ON f.artist_id = ar.artist_id
+LEFT JOIN (
+  SELECT al.artist_id, COUNT(sh.stream_id) AS total_streams
+  FROM albums al JOIN tracks t ON t.album_id = al.album_id
+  LEFT JOIN stream_history sh ON sh.track_id = t.track_id
+  GROUP BY al.artist_id
+) s ON s.artist_id = ar.artist_id
+LEFT JOIN (
+  SELECT al.artist_id, AVG(r.rating) AS average_rating, COUNT(*) AS rating_count
+  FROM albums al JOIN tracks t ON t.album_id = al.album_id JOIN ratings r ON r.track_id = t.track_id
+  GROUP BY al.artist_id
+) r ON r.artist_id = ar.artist_id;
 
 -- Validation queries (run after the migration; every orphan/invalid query should return zero rows).
 -- SELECT al.album_id FROM albums al LEFT JOIN artists ar ON ar.artist_id = al.artist_id WHERE ar.artist_id IS NULL;

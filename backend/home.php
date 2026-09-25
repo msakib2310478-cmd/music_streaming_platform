@@ -4,7 +4,7 @@ $userId = requireUser();
 
 $queries = [
     'weekly' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, COUNT(sh.stream_id) AS metric FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name ORDER BY metric DESC, t.title LIMIT 10",
-    'trending' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, SUM(sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY) AS recent_plays, SUM(sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 28 DAY) AS four_week_plays FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 28 DAY GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name ORDER BY recent_plays DESC, four_week_plays DESC, t.title LIMIT 10",
+    'trending' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, SUM(sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY) AS recent_plays, SUM(sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY) AS previous_plays, ROUND((SUM(sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY) - SUM(sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY)) / GREATEST(SUM(sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY), 1) * 100, 0) AS growth_percent FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 14 DAY GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name HAVING recent_plays > 0 ORDER BY growth_percent DESC, recent_plays DESC, t.title LIMIT 10",
     'played' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, COUNT(sh.stream_id) AS metric FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name ORDER BY metric DESC, t.title LIMIT 10",
     'liked' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, COUNT(f.user_id) AS metric FROM favorites f JOIN tracks t ON t.track_id = f.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name ORDER BY metric DESC, t.title LIMIT 10",
     'rated' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, AVG(r.rating) AS average_rating, COUNT(r.user_id) AS rating_count FROM ratings r JOIN tracks t ON t.track_id = r.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name HAVING COUNT(r.user_id) >= 2 ORDER BY average_rating DESC, rating_count DESC, t.title LIMIT 10",
@@ -48,6 +48,7 @@ unset($_SESSION['success'], $_SESSION['error']);
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>PulseFlow Dashboard</title>
     <link rel="stylesheet" href="../frontend/user-dashbord.css?v=20260925">
+    <link rel="stylesheet" href="../frontend/reporting.css?v=20260925">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <style>
         .feature-bar { display:flex; gap:10px; flex-wrap:wrap; margin:14px 0 24px; }
@@ -189,6 +190,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                 <a href="user-dashbord.php" class="active" data-dashboard-link><i class="fas fa-home"></i> Home</a>
                 <a href="#search" data-search-trigger><i class="fas fa-search"></i> Search</a>
                 <a href="favorites.php" data-dashboard-link><i class="fas fa-heart"></i> Favorites <span class="list-count" id="favorite-count"><?php echo $favoriteCount; ?></span></a>
+                <a href="queue.php" data-dashboard-link><i class="fas fa-list-ol"></i> Up Next</a>
                 <a href="playlists.php" data-dashboard-link><i class="fas fa-book"></i> Playlists</a>
                 <a href="subscriptions.php" data-dashboard-link><i class="fas fa-crown"></i> Subscription</a>
                 <a href="../backend/logout.php"><i class="fas fa-sign-out-alt"></i> Logout</a>
@@ -264,8 +266,12 @@ unset($_SESSION['success'], $_SESSION['error']);
                 <h2>Welcome back, <?php echo e($_SESSION['username'] ?? 'User'); ?></h2>
                 <div class="feature-bar">
                     <a href="recently-played.php" data-dashboard-link>Recently Played</a>
+                    <a href="queue.php" data-dashboard-link>Up Next</a>
                     <a href="followed-artists.php" data-dashboard-link>Followed Artists</a>
                     <a href="recommendations.php" data-dashboard-link>Recommended For You</a>
+                    <a href="analytics.php" data-dashboard-link>Listening Stats</a>
+                    <a href="charts.php" data-dashboard-link>Global Charts</a>
+                    <a href="charts.php?period=trending" data-dashboard-link>Trending Now</a>
                 </div>
                 </section>
 
@@ -305,6 +311,13 @@ unset($_SESSION['success'], $_SESSION['error']);
                                         <input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>">
                                         <input type="hidden" name="redirect" value="user-dashbord.php">
                                         <button class="small-action" title="Favorite"><i class="fas fa-heart"></i></button>
+                                    </form>
+                                    <form action="api.php" method="post">
+                                        <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
+                                        <input type="hidden" name="action" value="queue_add">
+                                        <input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>">
+                                        <input type="hidden" name="redirect" value="user-dashbord.php">
+                                        <button class="small-action" title="Add to Up Next" aria-label="Add to Up Next"><i class="fas fa-list-ol"></i></button>
                                     </form>
                                     <?php if (isset($track['metric'])): ?>
                                         <span class="metric"><?php echo (int)$track['metric']; ?> plays</span>
@@ -436,7 +449,10 @@ unset($_SESSION['success'], $_SESSION['error']);
                 if (!nextView) throw new Error('Dashboard view is unavailable.');
                 if (requestId !== dashboardRequest) return;
 
-                dashboardView.innerHTML = nextView.innerHTML;
+                const reportClass = ['charts', 'analytics', 'artist', 'queue-page'].find(className => nextView.classList.contains(className));
+                dashboardView.innerHTML = reportClass
+                    ? `<div class="reporting-shell ${reportClass}-shell">${nextView.innerHTML}</div>`
+                    : nextView.innerHTML;
                 dashboardView.querySelectorAll('.top-nav').forEach(header => header.remove());
                 const embeddedBreadcrumb = dashboardView.querySelector('p:first-child a[href="user-dashbord.php"]');
                 embeddedBreadcrumb?.parentElement.remove();

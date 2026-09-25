@@ -41,7 +41,7 @@ if ($type === 'track') {
         http_response_code(404);
         exit('Artist not found.');
     }
-    $tracksStmt = $pdo->prepare(trackQuery() . ' WHERE ar.artist_id = :id ORDER BY t.track_id LIMIT 20');
+    $tracksStmt = $pdo->prepare(trackQuery() . ' JOIN track_artists performer ON performer.track_id = t.track_id WHERE performer.artist_id = :id ORDER BY t.track_id LIMIT 20');
     $tracksStmt->execute(['id' => $id]);
     $tracks = $tracksStmt->fetchAll();
     $albumsStmt = $pdo->prepare('SELECT album_id, title, release_date, cover_image FROM albums WHERE artist_id = :id ORDER BY release_date DESC');
@@ -110,10 +110,11 @@ if ($type === 'track') {
             <img src="<?php echo e($item['cover_image'] ?: $item['album_cover']); ?>" alt="">
             <div>
                 <h1><?php echo e($item['title']); ?></h1>
-                <p class="muted"><?php echo e($item['artist_name']); ?> · <a href="album.php?id=<?php echo (int) $item['album_id']; ?>"><?php echo e($item['album_title']); ?></a></p>
+                <p class="muted"><?php echo e($item['artist_names'] ?: $item['artist_name']); ?> · <a href="album.php?id=<?php echo (int) $item['album_id']; ?>"><?php echo e($item['album_title']); ?></a></p>
                 <p class="genres"><?php foreach ($genres as $genre): ?><a href="genre.php?id=<?php echo (int) $genre['genre_id']; ?>"><?php echo e($genre['genre_name']); ?></a><?php endforeach; ?></p>
                 <?php if (!empty($item['audio_url'])): ?><audio class="track-audio" controls preload="metadata" src="<?php echo e($item['audio_url']); ?>" aria-label="Play <?php echo e($item['title']); ?>"></audio><?php else: ?><p class="muted">Audio is not available for this track.</p><?php endif; ?>
                 <form class="inline" method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="favorite"><input type="hidden" name="track_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="track.php?id=<?php echo $id; ?>"><button class="button" type="submit"><?php echo $isFavorite ? 'Remove Favorite' : 'Add Favorite'; ?></button></form>
+                <form class="inline" method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="queue_add"><input type="hidden" name="track_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="track.php?id=<?php echo $id; ?>"><button class="button" type="submit">Add to Up Next</button></form>
                 <span class="rating"> ★ <?php echo $rating['average_rating'] ? number_format((float) $rating['average_rating'], 1) : 'No ratings'; ?> (<?php echo (int) $rating['rating_count']; ?>)</span>
             </div>
         </section>

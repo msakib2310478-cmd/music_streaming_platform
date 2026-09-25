@@ -42,8 +42,35 @@ function trackQuery(): string
 {
     return 'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image, '
         . 't.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover, '
-        . 'ar.artist_id, ar.artist_name FROM tracks t '
+        . 'ar.artist_id, ar.artist_name, '
+        . '(SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR \' & \') '
+        . 'FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id '
+        . 'WHERE ta2.track_id = t.track_id) AS artist_names FROM tracks t '
         . 'JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id';
+}
+
+function normalizeQueue(PDO $pdo, int $userId): void
+{
+    $stmt = $pdo->prepare('SELECT queue_id FROM playback_queue WHERE user_id = :user_id ORDER BY queue_position, queue_id');
+    $stmt->execute(['user_id' => $userId]);
+    $update = $pdo->prepare('UPDATE playback_queue SET queue_position = :position WHERE queue_id = :queue_id AND user_id = :user_id');
+    foreach ($stmt->fetchAll(PDO::FETCH_COLUMN) as $position => $queueId) {
+        $update->execute(['position' => $position + 1, 'queue_id' => $queueId, 'user_id' => $userId]);
+    }
+}
+
+function playlistCanEdit(PDO $pdo, int $playlistId, int $userId): bool
+{
+    $stmt = $pdo->prepare('SELECT 1 FROM playlists p WHERE p.playlist_id = :playlist_id AND (p.user_id = :owner_id OR EXISTS (SELECT 1 FROM playlist_collaborators pc WHERE pc.playlist_id = p.playlist_id AND pc.user_id = :collaborator_id))');
+    $stmt->execute(['playlist_id' => $playlistId, 'owner_id' => $userId, 'collaborator_id' => $userId]);
+    return (bool)$stmt->fetchColumn();
+}
+
+function playlistIsOwner(PDO $pdo, int $playlistId, int $userId): bool
+{
+    $stmt = $pdo->prepare('SELECT 1 FROM playlists WHERE playlist_id = :playlist_id AND user_id = :user_id');
+    $stmt->execute(['playlist_id' => $playlistId, 'user_id' => $userId]);
+    return (bool)$stmt->fetchColumn();
 }
 
 function storeUploadedAudio(array $file): string

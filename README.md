@@ -36,7 +36,14 @@ The project is intended for local development and demonstration. Docker supplies
 - Artist follow/unfollow
 - Playlist creation, renaming, visibility changes, track management, and ordering
 - Recently played tracks
+- Spotify-style Up Next queue with add, remove, reorder, and clear actions
+- Collaborative playlists with owner-managed invitations and collaborator track editing
+- Multiple credited artists per track, including featured performers
 - Genre-based recommendations
+- Explainable SQL recommendations using listening, genre, follow, favorite, and rating signals
+- Personal listening analytics with total time, top genre/artist, most played track, and seven-day activity
+- Global daily, weekly, monthly, rated, favorited, and fastest-trending charts
+- Artist performance dashboard with followers, streams, ratings, top songs, and device audience
 - Subscription history and local Premium plan activation/cancellation
 
 ### Administrator features
@@ -67,6 +74,10 @@ The project is intended for local development and demonstration. Docker supplies
 │   ├── login.php              User login handler
 │   ├── register.php           User registration handler
 │   ├── home.php               Database-backed user dashboard
+│   ├── analytics.php          Personal listening analytics
+│   ├── charts.php             Global charts and growth-based trending
+│   ├── artist-dashboard.php   Artist performance reporting by artist id
+│   ├── queue.php              Authenticated Up Next queue
 │   ├── api.php                User actions and state changes
 │   ├── search.php             Search page and search logging
 │   ├── playlist.php           Playlist detail and editing
@@ -134,7 +145,7 @@ php backend/validate_setup.php
 Expected validator output:
 
 ```text
-Database setup is valid: 14 required tables and all required columns found.
+Database setup is valid: 17 required tables, 4 reporting views, and all required columns found.
 ```
 
 The SQL file is imported only when the database volume is created. To destroy the local database and recreate it from the SQL file:
@@ -145,6 +156,8 @@ docker compose up -d db
 ```
 
 The `-v` option permanently deletes the local Docker database volume and all data stored in it.
+
+For an existing database, apply the updated `music_streaming_db.sql` migration through MySQL or phpMyAdmin. It creates `playback_queue`, `playlist_collaborators`, and `track_artists`, then backfills each existing track's album artist as its primary performer. The migration uses `IF NOT EXISTS` and `INSERT IGNORE` for these additions.
 
 ## Run the Application
 
@@ -236,7 +249,15 @@ It also contains feature tables:
 - `search_history`
 - `subscriptions`
 
-The schema file also adds media metadata columns, indexes, sample data, foreign keys, and reporting views. The PHP application currently queries the tables directly; the views are available for future reporting work.
+The schema file also adds media metadata columns, reporting indexes, sample data, foreign keys, and live reporting views: `vw_user_listening_daily`, `vw_track_chart_metrics`, `vw_trending_tracks`, and `vw_artist_dashboard_metrics`. These views support personal analytics, global charts, growth-based trending, and artist reporting without storing duplicated summary data.
+
+The new normalized tables are used as follows:
+
+- `playback_queue`: private ordered queue rows owned by one user.
+- `playlist_collaborators`: unique playlist/user memberships; only playlist owners can invite or remove members.
+- `track_artists`: performer credits with `artist_role` and `display_order`; album ownership remains in `albums.artist_id`.
+
+All queue and playlist mutation requests go through `backend/api.php`, require a session and CSRF token, and scope their SQL writes to the authenticated user or an authorized playlist membership.
 
 ## Testing and Validation
 

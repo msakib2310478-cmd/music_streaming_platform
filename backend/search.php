@@ -39,6 +39,7 @@ if ($query !== '') {
         trackQuery() .
         ' WHERE t.title LIKE :track_title
           OR ar.artist_name LIKE :track_artist
+                    OR EXISTS (SELECT 1 FROM track_artists ta_search JOIN artists a_search ON a_search.artist_id = ta_search.artist_id WHERE ta_search.track_id = t.track_id AND a_search.artist_name LIKE :track_performer)
           OR al.title LIKE :track_album
          ORDER BY t.title
          LIMIT 30'
@@ -46,6 +47,7 @@ if ($query !== '') {
     $stmt->execute([
         'track_title' => $like,
         'track_artist' => $like,
+        'track_performer' => $like,
         'track_album' => $like,
     ]);
     $tracks = $stmt->fetchAll();
