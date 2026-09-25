@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PulseFlow | Music Streaming Platform</title>
+    <meta
+      name="description"
+      content="PulseFlow is a modern music streaming platform for discovering music, creating playlists, and enjoying daily mixes."
+    />
+    <style>
+      :root {
+        --bg: #090909;
+        --bg-soft: #121212;
+        --panel: rgba(24, 24, 24, 0.9);
+        --panel-2: #181818;
+        --line: rgba(255, 255, 255, 0.08);
+        --text: #f5f5f5;
+        --muted: #b3b3b3;
+        --green: #1db954;
+        --green-strong: #169642;
+        --white: #ffffff;
+        --shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html {
+        scroll-behavior: smooth;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+        background: linear-gradient(180deg, #0a0a0a 0%, #121212 22%, #0a0a0a 100%);
+        color: var(--text);
+      }
+
+      a {
+        color: inherit;
+        text-decoration: none;
+      }
+
+      img {
+        max-width: 100%;
+        display: block;
+      }
+
+      .container {
+        width: min(1180px, calc(100% - 32px));
+        margin: 0 auto;
+      }
+
+      .topbar {
+        position: sticky;
+        top: 0;
+        z-index: 50;
+        backdrop-filter: blur(12px);
+        background: rgba(9, 9, 9, 0.7);
+        border-bottom: 1px solid var(--line);
+      }
+
+      .nav {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        min-height: 74px;
+      }
+
+      .brand {
+        display: inline-flex;
+        align-items: center;
+        gap: 12px;
+        font-weight: 800;
+        letter-spacing: 0.04em;
+        font-size: 1.6rem;
+      }
+
+      .brand-mark {
+        width: 38px;
+        height: 38px;
+        display: grid;
+        place-items: center;
+        border-radius: 50%;
+        background: var(--green);
+        color: var(--bg);
+        font-size: 1.2rem;
+      }
+
+      .nav-links {
+        display: flex;
+        align-items: center;
+        gap: 24px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      .nav-links a:hover {
+        color: var(--white);
+      }
+
+      .nav-actions {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 999px;
+        padding: 12px 22px;
+        font-weight: 700;
+        transition: 0.2s ease;
+        border: 1px solid transparent;
+        cursor: pointer;
+      }
+
+      .btn-outline {
+        border-color: var(--line);
+        background: transparent;
+        color: var(--white);
+      }
+
+      .btn-fill {
+        background: var(--green);
+        color: #06170d;
+        box-shadow: 0 12px 25px rgba(29, 185, 84, 0.28);
+      }
+
+      .btn:hover {
+        transform: translateY(-1px);
+      }
+
+      .hero {
+        padding: 72px 0 48px;
+        position: relative;
+        overflow: hidden;
+      }
+
+      .hero::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        background: radial-gradient(circle at 20% 20%, rgba(29,185,84,0.25), transparent 30%),
+                    radial-gradient(circle at 80% 30%, rgba(29,185,84,0.12), transparent 28%);
+        pointer-events: none;
+      }
+
+      .hero-grid {
+        position: relative;
+        display: grid;
+        grid-template-columns: 1.1fr 0.9fr;
+        gap: 38px;
+        align-items: center;
+      }
+
+      .eyebrow {
+        display: inline-block;
+        margin-bottom: 16px;
+        padding: 8px 12px;
+        border: 1px solid rgba(29,185,84,0.35);
+        border-radius: 999px;
+        background: rgba(29,185,84,0.08);
+        color: #7ff0a8;
+        font-size: 0.75rem;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        font-weight: 700;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2.8rem, 5vw, 5rem);
+        line-height: 0.96;
+        letter-spacing: -0.05em;
+      }
+
+      .hero-copy p {
+        margin: 20px 0 30px;
+        max-width: 620px;
+        color: var(--muted);
+        font-size: 1.08rem;
+        line-height: 1.8;
+      }
+
+      .hero-actions {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 14px;
+        margin-bottom: 26px;
+      }
+
+      .stat-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 28px;
+        color: var(--muted);
+      }
+
+      .stat-row strong {
+        color: var(--white);
+        font-size: 1.5rem;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .album-card {
+        position: relative;
+        background: linear-gradient(145deg, rgba(18,18,18,0.98), rgba(36,36,36,0.9));
+        border: 1px solid var(--line);
+        border-radius: 28px;
+        padding: 24px;
+        box-shadow: var(--shadow);
+      }
+
+      .player {
+        background: linear-gradient(135deg, rgba(29,185,84,0.2), rgba(18,18,18,0.9));
+        border: 1px solid rgba(255,255,255,0.06);
+        border-radius: 24px;
+        padding: 18px;
+      }
+
+      .cover {
+        width: 100%;
+        aspect-ratio: 1;
+        border-radius: 22px;
+        overflow: hidden;
+        background: url('https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=900&q=80') center/cover no-repeat;
+        box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+        margin-bottom: 20px;
+      }
+
+      .track-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: end;
+        gap: 16px;
+      }
+
+      .track-title {
+        font-size: 1.6rem;
+        font-weight: 700;
+        margin: 0 0 4px;
+      }
+
+      .track-artist {
+        color: var(--muted);
+      }
+
+      .tiny-label {
+        background: rgba(255,255,255,0.06);
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        padding: 8px 12px;
+        color: #d8fbe1;
+        font-size: 0.72rem;
+      }
+
+      .seekbar {
+        margin-top: 22px;
+        height: 7px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.12);
+        overflow: hidden;
+        position: relative;
+      }
+
+      .seekbar::before {
+        content: "";
+        position: absolute;
+        inset: 0 auto 0 0;
+        width: 68%;
+        background: linear-gradient(90deg, var(--green), #5deca0);
+        border-radius: inherit;
+      }
+
+      .mini-cards {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 18px;
+        margin-top: 24px;
+      }
+
+      .mini {
+        background: rgba(255,255,255,0.04);
+        border: 1px solid var(--line);
+        border-radius: 18px;
+        padding: 16px;
+      }
+
+      .mini strong {
+        display: block;
+        font-size: 1.2rem;
+        margin-top: 10px;
+      }
+
+      .mini span {
+        color: var(--muted);
+        font-size: 0.82rem;
+      }
+
+      section {
+        padding: 42px 0;
+      }
+
+      .section-head {
+        display: flex;
+        align-items: end;
+        justify-content: space-between;
+        gap: 18px;
+        margin-bottom: 28px;
+      }
+
+      .section-head h2 {
+        margin: 0;
+        font-size: clamp(2rem, 3vw, 3rem);
+        letter-spacing: -0.05em;
+      }
+
+      .section-head a {
+        color: var(--green);
+        font-weight: 700;
+      }
+
+      .feature-grid {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 20px;
+      }
+
+      .feature-card {
+        background: rgba(255,255,255,0.02);
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        padding: 24px;
+      }
+
+      .icon {
+        width: 52px;
+        height: 52px;
+        display: grid;
+        place-items: center;
+        border-radius: 16px;
+        background: rgba(29,185,84,0.12);
+        color: var(--green);
+        font-size: 1.5rem;
+        margin-bottom: 18px;
+      }
+
+      .feature-card h3 {
+        margin: 0 0 12px;
+        font-size: 1.3rem;
+      }
+
+      .feature-card p {
+        margin: 0;
+        color: var(--muted);
+        line-height: 1.7;
+      }
+
+      .cta {
+        padding: 28px 0 80px;
+      }
+
+      .cta-box {
+        padding: 36px 28px;
+        border-radius: 28px;
+        background: linear-gradient(135deg, rgba(29,185,84,0.2), rgba(19,19,19,0.95));
+        border: 1px solid rgba(29,185,84,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+      }
+
+      .cta-box h3 {
+        margin: 0 0 8px;
+        font-size: clamp(1.8rem, 3vw, 2.8rem);
+      }
+
+      .cta-box p {
+        margin: 0;
+        color: rgba(255,255,255,0.75);
+      }
+
+      footer {
+        border-top: 1px solid var(--line);
+        padding: 28px 0 44px;
+        color: var(--muted);
+      }
+
+      .footer-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+
+      @media (max-width: 820px) {
+        .nav-links {
+          display: flex !important;
+        }
+
+        .hero-grid,
+        .feature-grid {
+          grid-template-columns: 1.1fr 0.9fr !important;
+        }
+
+        .cta-box {
+          flex-direction: row !important;
+          align-items: center !important;
+        }
+      }
+
+      @media (max-width: 560px) {
+        .mini-cards {
+          grid-template-columns: repeat(3, 1fr) !important;
+        }
+
+        .nav {
+          min-height: 74px !important;
+        }
+
+        .nav-actions {
+          gap: 12px !important;
+        }
+
+        .btn {
+          padding: 12px 22px !important;
+          font-size: 1rem !important;
+        }
+      }
+
+      /* Force desktop layout everywhere */
+      html, body {
+        min-width: 1100px;
+      }
+
+      body {
+        overflow-x: auto;
+      }
+
+      .nav-links {
+        display: flex !important;
+      }
+
+      .hero-grid,
+      .feature-grid {
+        grid-template-columns: 1.1fr 0.9fr !important;
+      }
+
+      .mini-cards {
+        grid-template-columns: repeat(3, 1fr) !important;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="container nav">
+        <a href="#" class="brand" aria-label="PulseFlow home">
+          <span class="brand-mark">♫</span>
+          <span>PulseFlow</span>
+        </a>
+
+        <nav class="nav-links" aria-label="Main navigation">
+          <a href="#features">Features</a>
+          <a href="#discover">Discover</a>
+          <a href="#pricing">Pricing</a>
+          <a href="#support">Support</a>
+        </nav>
+
+        <div class="nav-actions">
+          <a class="btn btn-outline" href="frontend/user-login.html">Log in</a>
+          <a class="btn btn-fill" href="frontend/user-register.html">Get started</a>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="container hero-grid">
+          <div class="hero-copy">
+            <span class="eyebrow">Listen better</span>
+            <h1>Stream the songs that match your mood.</h1>
+            <p>
+              Discover fresh tracks, build personal playlists, and enjoy endless listening with curated recommendations,
+              daily mixes, and premium sound that follows you everywhere.
+            </p>
+
+            <div class="hero-actions">
+              <a class="btn btn-fill" href="frontend/user-register.html">Start free</a>
+              <a class="btn btn-outline" href="#features">Explore features</a>
+            </div>
+
+            <div class="stat-row" aria-label="User statistics">
+              <div>
+                <strong>50M+</strong>
+                <span>tracks</span>
+              </div>
+              <div>
+                <strong>1.5B</strong>
+                <span>listens</span>
+              </div>
+              <div>
+                <strong>4.9/5</strong>
+                <span>rating</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="album-card" aria-label="Now playing section">
+            <div class="player">
+              <div class="cover" aria-label="Album art"></div>
+
+              <div class="track-meta">
+                <div>
+                  <p class="track-title">Midnight Echo</p>
+                  <span class="track-artist">Nova Bloom</span>
+                </div>
+                <span class="tiny-label">Live mix</span>
+              </div>
+
+              <div class="seekbar" aria-hidden="true"></div>
+
+              <div class="mini-cards">
+                <div class="mini">
+                  <span>Playlist</span>
+                  <strong>24</strong>
+                </div>
+                <div class="mini">
+                  <span>Artists</span>
+                  <strong>128</strong>
+                </div>
+                <div class="mini">
+                  <span>Offline</span>
+                  <strong>Yes</strong>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="features">
+        <div class="container">
+          <div class="section-head">
+            <h2>Features built for music lovers</h2>
+            <a href="frontend/user-register.html">Create account</a>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <div class="icon">♪</div>
+              <h3>Smart recommendations</h3>
+              <p>
+                Discover tracks that fit your taste with algorithm-powered playlists and handcrafted daily selections.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <div class="icon">◎</div>
+              <h3>Curated mixes</h3>
+              <p>
+                Build mood-based playlists for workouts, focused work, chill evenings, and every moment in between.
+              </p>
+            </article>
+
+            <article class="feature-card">
+              <div class="icon">▣</div>
+              <h3>Offline listening</h3>
+              <p>
+                Save your favorites and keep listening even when your connection drops or you are on the move.
+              </p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section id="discover">
+        <div class="container">
+          <div class="section-head">
+            <h2>Made for every moment</h2>
+            <a href="frontend/user-login.html">Open app</a>
+          </div>
+
+          <div class="feature-grid">
+            <article class="feature-card">
+              <div class="icon">⚡</div>
+              <h3>Instant discovery</h3>
+              <p>Jump into trending albums, emerging artists, and your personalized weekly discovery feed.</p>
+            </article>
+
+            <article class="feature-card">
+              <div class="icon">♥</div>
+              <h3>Follow favorites</h3>
+              <p>Stay connected to the artists and creators you love with updates, top songs, and new releases.</p>
+            </article>
+
+            <article class="feature-card">
+              <div class="icon">◌</div>
+              <h3>Premium sound</h3>
+              <p>Enjoy polished listening quality with smooth playback, high-definition audio, and rich sound details.</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="cta" id="pricing">
+        <div class="container">
+          <div class="cta-box">
+            <div>
+              <h3>Ready to start your listening journey?</h3>
+              <p>Join today and explore the music you love, all in one place.</p>
+            </div>
+            <div class="hero-actions">
+              <a class="btn btn-fill" href="frontend/user-register.html">Sign up free</a>
+              <a class="btn btn-outline" href="frontend/admin-login.html">Admin login</a>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer id="support">
+      <div class="container footer-row">
+        <div class="brand">
+          <span class="brand-mark">♫</span>
+          <span>PulseFlow</span>
+        </div>
+        <span>© 2026 PulseFlow. All rights reserved.</span>
+      </div>
+    </footer>
+  </body>
+</html>
