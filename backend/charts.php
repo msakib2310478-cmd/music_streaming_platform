@@ -4,29 +4,59 @@ requireUser();
 $period = $_GET['period'] ?? 'week';
 $periods = ['today' => ['Today\'s Top 10', 'today_plays'], 'week' => ['This Week\'s Top 10', 'week_plays'], 'month' => ['This Month\'s Top 10', 'month_plays']];
 $chartRows = [];
-if (isset($periods[$period])) {
-    [$heading, $metric] = $periods[$period];
-    $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, $metric AS plays
-        FROM vw_track_chart_metrics WHERE $metric > 0 ORDER BY plays DESC, title LIMIT 10");
-    $chartRows = $stmt->fetchAll();
-} elseif ($period === 'rated') {
-    $heading = 'Most Rated';
-    $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, average_rating AS score, rating_count AS votes FROM vw_track_chart_metrics WHERE rating_count > 0 ORDER BY votes DESC, score DESC, title LIMIT 10");
-    $chartRows = $stmt->fetchAll();
-} elseif ($period === 'favorited') {
-    $heading = 'Most Favorited';
-    $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, favorite_count AS favorites FROM vw_track_chart_metrics WHERE favorite_count > 0 ORDER BY favorites DESC, title LIMIT 10");
-    $chartRows = $stmt->fetchAll();
-} else {
-    $period = 'trending';
-    $heading = 'Fastest Trending';
-    $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, recent_plays, previous_plays, growth_percent FROM vw_trending_tracks ORDER BY growth_percent DESC, recent_plays DESC, title LIMIT 10");
-    $chartRows = $stmt->fetchAll();
+try {
+    if (isset($periods[$period])) {
+        [$heading, $metric] = $periods[$period];
+        $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, $metric AS plays
+            FROM vw_track_chart_metrics WHERE $metric > 0 ORDER BY plays DESC, title LIMIT 10");
+        $chartRows = $stmt->fetchAll();
+    } elseif ($period === 'rated') {
+        $heading = 'Most Rated';
+        $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, average_rating AS score, rating_count AS votes FROM vw_track_chart_metrics WHERE rating_count > 0 ORDER BY votes DESC, score DESC, title LIMIT 10");
+        $chartRows = $stmt->fetchAll();
+    } elseif ($period === 'favorited') {
+        $heading = 'Most Favorited';
+        $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, favorite_count AS favorites FROM vw_track_chart_metrics WHERE favorite_count > 0 ORDER BY favorites DESC, title LIMIT 10");
+        $chartRows = $stmt->fetchAll();
+    } else {
+        $period = 'trending';
+        $heading = 'Fastest Trending';
+        $stmt = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, recent_plays, previous_plays, growth_percent FROM vw_trending_tracks ORDER BY growth_percent DESC, recent_plays DESC, title LIMIT 10");
+        $chartRows = $stmt->fetchAll();
+    }
+} catch (PDOException $exception) {
+    if (isset($periods[$period])) {
+        [$heading] = $periods[$period];
+        $days = ['today' => 1, 'week' => 7, 'month' => 30][$period];
+        $stmt = $pdo->query("SELECT t.track_id, t.title, ar.artist_name, COUNT(sh.stream_id) AS plays
+            FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id
+            LEFT JOIN stream_history sh ON sh.track_id = t.track_id AND sh.played_at >= CURRENT_TIMESTAMP - INTERVAL $days DAY
+            GROUP BY t.track_id, t.title, ar.artist_name HAVING plays > 0 ORDER BY plays DESC, t.title LIMIT 10");
+        $chartRows = $stmt->fetchAll();
+    } elseif ($period === 'rated') {
+        $heading = 'Most Rated';
+        $stmt = $pdo->query('SELECT t.track_id, t.title, ar.artist_name, AVG(r.rating) AS score, COUNT(r.user_id) AS votes FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id JOIN ratings r ON r.track_id = t.track_id GROUP BY t.track_id, t.title, ar.artist_name HAVING votes > 0 ORDER BY votes DESC, score DESC, t.title LIMIT 10');
+        $chartRows = $stmt->fetchAll();
+    } elseif ($period === 'favorited') {
+        $heading = 'Most Favorited';
+        $stmt = $pdo->query('SELECT t.track_id, t.title, ar.artist_name, COUNT(f.user_id) AS favorites FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id JOIN favorites f ON f.track_id = t.track_id GROUP BY t.track_id, t.title, ar.artist_name HAVING favorites > 0 ORDER BY favorites DESC, t.title LIMIT 10');
+        $chartRows = $stmt->fetchAll();
+    } else {
+        $period = 'trending';
+        $heading = 'Fastest Trending';
+        $stmt = $pdo->query("SELECT t.track_id, t.title, ar.artist_name,
+                SUM(CASE WHEN sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END) AS recent_plays,
+                SUM(CASE WHEN sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END) AS previous_plays,
+                ROUND((SUM(CASE WHEN sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END) - SUM(CASE WHEN sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END)) / GREATEST(SUM(CASE WHEN sh.played_at < CURRENT_TIMESTAMP - INTERVAL 7 DAY THEN 1 ELSE 0 END), 1) * 100, 0) AS growth_percent
+            FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id
+            JOIN stream_history sh ON sh.track_id = t.track_id AND sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 14 DAY
+            GROUP BY t.track_id, t.title, ar.artist_name HAVING recent_plays > 0 ORDER BY growth_percent DESC, recent_plays DESC, t.title LIMIT 10");
+        $chartRows = $stmt->fetchAll();
+    }
 }
 if (!$chartRows) {
     $heading .= ' - all-time fallback';
-    $fallbackChart = $pdo->query("SELECT track_id, title, COALESCE(artist_names, artist_name) AS artist_name, total_plays AS plays
-        FROM vw_track_chart_metrics WHERE total_plays > 0 ORDER BY total_plays DESC, title LIMIT 10");
+    $fallbackChart = $pdo->query('SELECT t.track_id, t.title, ar.artist_name, COUNT(sh.stream_id) AS plays FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id LEFT JOIN stream_history sh ON sh.track_id = t.track_id GROUP BY t.track_id, t.title, ar.artist_name HAVING plays > 0 ORDER BY plays DESC, t.title LIMIT 10');
     $chartRows = $fallbackChart->fetchAll();
 }
 $links = ['today' => 'Today', 'week' => 'This week', 'month' => 'This month', 'rated' => 'Most rated', 'favorited' => 'Most favorited', 'trending' => 'Trending'];

@@ -35,21 +35,42 @@ if ($query !== '') {
     ]);
     $albums = $stmt->fetchAll();
 
-    $stmt = $pdo->prepare(
-        trackQuery() .
-        ' WHERE t.title LIKE :track_title
-          OR ar.artist_name LIKE :track_artist
-                    OR EXISTS (SELECT 1 FROM track_artists ta_search JOIN artists a_search ON a_search.artist_id = ta_search.artist_id WHERE ta_search.track_id = t.track_id AND a_search.artist_name LIKE :track_performer)
-          OR al.title LIKE :track_album
-         ORDER BY t.title
-         LIMIT 30'
-    );
-    $stmt->execute([
-        'track_title' => $like,
-        'track_artist' => $like,
-        'track_performer' => $like,
-        'track_album' => $like,
-    ]);
+    try {
+        $stmt = $pdo->prepare(
+            trackQuery() .
+            ' WHERE t.title LIKE :track_title
+              OR ar.artist_name LIKE :track_artist
+              OR EXISTS (SELECT 1 FROM track_artists ta_search JOIN artists a_search ON a_search.artist_id = ta_search.artist_id WHERE ta_search.track_id = t.track_id AND a_search.artist_name LIKE :track_performer)
+              OR al.title LIKE :track_album
+             ORDER BY t.title
+             LIMIT 30'
+        );
+        $stmt->execute([
+            'track_title' => $like,
+            'track_artist' => $like,
+            'track_performer' => $like,
+            'track_album' => $like,
+        ]);
+    } catch (PDOException $exception) {
+        $stmt = $pdo->prepare(
+            'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image,
+                    t.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover,
+                    ar.artist_id, ar.artist_name
+             FROM tracks t
+             JOIN albums al ON al.album_id = t.album_id
+             JOIN artists ar ON ar.artist_id = al.artist_id
+             WHERE t.title LIKE :track_title
+                OR ar.artist_name LIKE :track_artist
+                OR al.title LIKE :track_album
+             ORDER BY t.title
+             LIMIT 30'
+        );
+        $stmt->execute([
+            'track_title' => $like,
+            'track_artist' => $like,
+            'track_album' => $like,
+        ]);
+    }
     $tracks = $stmt->fetchAll();
 
     $stmt = $pdo->prepare(
@@ -434,7 +455,7 @@ if ($query !== '') {
                     <div class="row search-result-row">
                         <a
                             href="<?php echo $url; ?>?id=<?php echo (int)$item[$idKey]; ?>"
-                            <?php if ($heading === 'Tracks'): ?>class="play-track" data-track-id="<?php echo (int)$item['track_id']; ?>" data-audio-url="<?php echo e($item['audio_url']); ?>" data-title="<?php echo e($item['title']); ?>" data-artist="<?php echo e($item['artist_name']); ?>"<?php else: ?>data-dashboard-link<?php endif; ?>
+                            <?php if ($heading === 'Tracks'): ?>class="play-track" data-track-id="<?php echo (int)$item['track_id']; ?>" data-audio-url="<?php echo e($item['audio_url']); ?>" data-title="<?php echo e($item['title']); ?>" data-artist="<?php echo e($item['artist_names'] ?: $item['artist_name']); ?>" data-artist-id="<?php echo (int)$item['artist_id']; ?>"<?php else: ?>data-dashboard-link<?php endif; ?>
                         >
                             <?php echo e($item[$nameKey]); ?>
                         </a>

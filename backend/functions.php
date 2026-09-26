@@ -22,6 +22,44 @@ function requireUser(): int
     return currentUserId();
 }
 
+function requireArtist(): int
+{
+    redirectIfNotLoggedIn('../frontend/user-login.html');
+    if (($_SESSION['role'] ?? '') === 'admin') {
+        header('Location: admin-dashboard.php');
+        exit;
+    }
+
+    ensureArtistAccountsTable($GLOBALS['pdo']);
+    $stmt = $GLOBALS['pdo']->prepare("SELECT artist_id FROM artist_accounts WHERE user_id = :user_id AND status = 'approved'");
+    $stmt->execute(['user_id' => currentUserId()]);
+    $artistId = (int) $stmt->fetchColumn();
+    if ($artistId <= 0) {
+        header('Location: artist-application-status.php');
+        exit;
+    }
+
+    $_SESSION['artist_id'] = $artistId;
+    return $artistId;
+}
+
+function ensureArtistAccountsTable(PDO $pdo): void
+{
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS artist_accounts (
+            user_id INT NOT NULL,
+            artist_id INT NOT NULL,
+            status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+            requested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+            reviewed_at TIMESTAMP NULL DEFAULT NULL,
+            PRIMARY KEY (user_id),
+            UNIQUE KEY uq_artist_accounts_artist (artist_id),
+            CONSTRAINT fk_artist_accounts_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+            CONSTRAINT fk_artist_accounts_artist FOREIGN KEY (artist_id) REFERENCES artists (artist_id) ON DELETE CASCADE
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci"
+    );
+}
+
 function csrfToken(): string
 {
     if (empty($_SESSION['csrf_token'])) {
@@ -40,12 +78,25 @@ function verifyCsrf(?string $token): void
 
 function trackQuery(): string
 {
+    global $pdo;
+    static $hasTrackArtists = null;
+
+    if ($hasTrackArtists === null) {
+        try {
+            $tableCheck = $pdo->query("SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = 'track_artists' LIMIT 1");
+            $hasTrackArtists = (bool) $tableCheck->fetchColumn();
+        } catch (PDOException $exception) {
+            $hasTrackArtists = false;
+        }
+    }
+
+    $artistNames = $hasTrackArtists
+        ? '(SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR \' & \') FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id WHERE ta2.track_id = t.track_id)'
+        : 'ar.artist_name';
+
     return 'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image, '
         . 't.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover, '
-        . 'ar.artist_id, ar.artist_name, '
-        . '(SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR \' & \') '
-        . 'FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id '
-        . 'WHERE ta2.track_id = t.track_id) AS artist_names FROM tracks t '
+        . 'ar.artist_id, ar.artist_name, ' . $artistNames . ' AS artist_names FROM tracks t '
         . 'JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id';
 }
 

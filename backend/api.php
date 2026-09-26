@@ -58,6 +58,21 @@ try {
         if (!$trackCheck->fetchColumn()) {
             throw new InvalidArgumentException('Track not found.');
         }
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS playback_queue (
+                queue_id INT NOT NULL AUTO_INCREMENT,
+                user_id INT NOT NULL,
+                track_id INT NOT NULL,
+                queue_position INT NOT NULL,
+                added_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (queue_id),
+                KEY idx_playback_queue_user_position (user_id, queue_position),
+                KEY idx_playback_queue_track_id (track_id),
+                CONSTRAINT fk_playback_queue_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+                CONSTRAINT fk_playback_queue_track FOREIGN KEY (track_id) REFERENCES tracks (track_id) ON DELETE CASCADE,
+                CONSTRAINT chk_playback_queue_position CHECK (queue_position > 0)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci'
+        );
         $positionStmt = $pdo->prepare('SELECT COALESCE(MAX(queue_position), 0) + 1 FROM playback_queue WHERE user_id = :user_id');
         $positionStmt->execute(['user_id' => $userId]);
         $insert = $pdo->prepare('INSERT INTO playback_queue (user_id, track_id, queue_position) VALUES (:user_id, :track_id, :queue_position)');

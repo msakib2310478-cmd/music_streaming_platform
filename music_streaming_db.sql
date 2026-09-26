@@ -675,6 +675,18 @@ CREATE TABLE IF NOT EXISTS track_artists (
   CONSTRAINT chk_track_artists_order CHECK (display_order > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
+CREATE TABLE IF NOT EXISTS artist_accounts (
+  user_id INT NOT NULL,
+  artist_id INT NOT NULL,
+  status ENUM('pending', 'approved', 'rejected') NOT NULL DEFAULT 'pending',
+  requested_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  reviewed_at TIMESTAMP NULL DEFAULT NULL,
+  PRIMARY KEY (user_id),
+  UNIQUE KEY uq_artist_accounts_artist (artist_id),
+  CONSTRAINT fk_artist_accounts_user FOREIGN KEY (user_id) REFERENCES users (user_id) ON DELETE CASCADE,
+  CONSTRAINT fk_artist_accounts_artist FOREIGN KEY (artist_id) REFERENCES artists (artist_id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
 INSERT IGNORE INTO track_artists (track_id, artist_id, artist_role, display_order)
 SELECT t.track_id, al.artist_id, 'primary', 1
 FROM tracks t JOIN albums al ON al.album_id = t.album_id;

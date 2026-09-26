@@ -5,7 +5,7 @@ $requiredTables = [
     'users', 'artists', 'albums', 'tracks', 'playlists', 'stream_history',
     'genres', 'track_genres', 'playlist_tracks', 'favorites', 'artist_follows',
     'ratings', 'search_history', 'subscriptions', 'playback_queue',
-    'playlist_collaborators', 'track_artists',
+    'playlist_collaborators', 'track_artists', 'artist_accounts',
 ];
 $requiredViews = [
     'vw_user_listening_daily', 'vw_track_chart_metrics',

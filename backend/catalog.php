@@ -6,20 +6,41 @@ $type = $_GET['type'] ?? 'track';
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
 
 if ($type === 'track') {
-    $stmt = $pdo->prepare(trackQuery() . ' WHERE t.track_id = :id');
+    $stmt = $pdo->prepare(
+        'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image,
+                t.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover,
+                ar.artist_id, ar.artist_name, ar.artist_name AS artist_names
+         FROM tracks t
+         JOIN albums al ON al.album_id = t.album_id
+         JOIN artists ar ON ar.artist_id = al.artist_id
+         WHERE t.track_id = :id'
+    );
     $stmt->execute(['id' => $id]);
     $item = $stmt->fetch();
     if (!$item) {
         http_response_code(404);
         exit('Track not found.');
     }
-    $genresStmt = $pdo->prepare('SELECT g.genre_id, g.genre_name FROM track_genres tg JOIN genres g ON g.genre_id = tg.genre_id WHERE tg.track_id = :id ORDER BY g.genre_name');
-    $genresStmt->execute(['id' => $id]);
-    $genres = $genresStmt->fetchAll();
-    $ratingStmt = $pdo->prepare('SELECT AVG(rating) average_rating, COUNT(*) rating_count, MAX(CASE WHEN user_id = :user_id THEN rating END) user_rating FROM ratings WHERE track_id = :track_id');
-    $ratingStmt->execute(['user_id' => $userId, 'track_id' => $id]);
-    $rating = $ratingStmt->fetch();
-    $isFavorite = userHasFavorite($pdo, $userId, $id);
+    $genres = [];
+    try {
+        $genresStmt = $pdo->prepare('SELECT g.genre_id, g.genre_name FROM track_genres tg JOIN genres g ON g.genre_id = tg.genre_id WHERE tg.track_id = :id ORDER BY g.genre_name');
+        $genresStmt->execute(['id' => $id]);
+        $genres = $genresStmt->fetchAll();
+    } catch (PDOException $exception) {
+        $genres = [];
+    }
+    try {
+        $ratingStmt = $pdo->prepare('SELECT AVG(rating) average_rating, COUNT(*) rating_count, MAX(CASE WHEN user_id = :user_id THEN rating END) user_rating FROM ratings WHERE track_id = :track_id');
+        $ratingStmt->execute(['user_id' => $userId, 'track_id' => $id]);
+        $rating = $ratingStmt->fetch();
+    } catch (PDOException $exception) {
+        $rating = ['average_rating' => null, 'rating_count' => 0, 'user_rating' => null];
+    }
+    try {
+        $isFavorite = userHasFavorite($pdo, $userId, $id);
+    } catch (PDOException $exception) {
+        $isFavorite = false;
+    }
     $title = $item['title'];
 } elseif ($type === 'album') {
     $stmt = $pdo->prepare('SELECT al.*, ar.artist_name FROM albums al JOIN artists ar ON ar.artist_id = al.artist_id WHERE al.album_id = :id');
@@ -29,8 +50,22 @@ if ($type === 'track') {
         http_response_code(404);
         exit('Album not found.');
     }
-    $tracksStmt = $pdo->prepare(trackQuery() . ' WHERE t.album_id = :id ORDER BY t.track_number, t.track_id');
-    $tracksStmt->execute(['id' => $id]);
+    try {
+        $tracksStmt = $pdo->prepare(trackQuery() . ' WHERE t.album_id = :id ORDER BY t.track_number, t.track_id');
+        $tracksStmt->execute(['id' => $id]);
+    } catch (PDOException $exception) {
+        $tracksStmt = $pdo->prepare(
+            'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image,
+                    t.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover,
+                    ar.artist_id, ar.artist_name
+             FROM tracks t
+             JOIN albums al ON al.album_id = t.album_id
+             JOIN artists ar ON ar.artist_id = al.artist_id
+             WHERE t.album_id = :id
+             ORDER BY t.track_number, t.track_id'
+        );
+        $tracksStmt->execute(['id' => $id]);
+    }
     $tracks = $tracksStmt->fetchAll();
     $title = $item['title'];
 } else {
@@ -41,8 +76,23 @@ if ($type === 'track') {
         http_response_code(404);
         exit('Artist not found.');
     }
-    $tracksStmt = $pdo->prepare(trackQuery() . ' JOIN track_artists performer ON performer.track_id = t.track_id WHERE performer.artist_id = :id ORDER BY t.track_id LIMIT 20');
-    $tracksStmt->execute(['id' => $id]);
+    try {
+        $tracksStmt = $pdo->prepare(trackQuery() . ' JOIN track_artists performer ON performer.track_id = t.track_id WHERE performer.artist_id = :id ORDER BY t.track_id LIMIT 20');
+        $tracksStmt->execute(['id' => $id]);
+    } catch (PDOException $exception) {
+        $tracksStmt = $pdo->prepare(
+            'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image,
+                    t.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover,
+                    ar.artist_id, ar.artist_name
+             FROM tracks t
+             JOIN albums al ON al.album_id = t.album_id
+             JOIN artists ar ON ar.artist_id = al.artist_id
+             WHERE al.artist_id = :id
+             ORDER BY t.track_id
+             LIMIT 20'
+        );
+        $tracksStmt->execute(['id' => $id]);
+    }
     $tracks = $tracksStmt->fetchAll();
     $albumsStmt = $pdo->prepare('SELECT album_id, title, release_date, cover_image FROM albums WHERE artist_id = :id ORDER BY release_date DESC');
     $albumsStmt->execute(['id' => $id]);
@@ -109,7 +159,7 @@ if ($type === 'track') {
         <section class="panel hero">
             <img src="<?php echo e($item['cover_image'] ?: $item['album_cover']); ?>" alt="">
             <div>
-                <h1><?php echo e($item['title']); ?></h1>
+                <h1 data-artist-id="<?php echo (int) $item['artist_id']; ?>"><?php echo e($item['title']); ?></h1>
                 <p class="muted"><?php echo e($item['artist_names'] ?: $item['artist_name']); ?> · <a href="album.php?id=<?php echo (int) $item['album_id']; ?>"><?php echo e($item['album_title']); ?></a></p>
                 <p class="genres"><?php foreach ($genres as $genre): ?><a href="genre.php?id=<?php echo (int) $genre['genre_id']; ?>"><?php echo e($genre['genre_name']); ?></a><?php endforeach; ?></p>
                 <?php if (!empty($item['audio_url'])): ?><audio class="track-audio" controls preload="metadata" src="<?php echo e($item['audio_url']); ?>" aria-label="Play <?php echo e($item['title']); ?>"></audio><?php else: ?><p class="muted">Audio is not available for this track.</p><?php endif; ?>
@@ -123,7 +173,7 @@ if ($type === 'track') {
         <section class="panel hero"><img src="<?php echo e($item['cover_image']); ?>" alt=""><div><h1><?php echo e($item['title']); ?></h1><p class="muted"><?php echo e($item['artist_name']); ?> · <?php echo e($item['release_date']); ?></p><p><?php echo e($item['description']); ?></p></div></section>
         <section class="panel"><h2>Tracks</h2><?php foreach ($tracks as $track): ?><div class="row"><a href="track.php?id=<?php echo (int) $track['track_id']; ?>"><?php echo (int) $track['track_number']; ?>. <?php echo e($track['title']); ?></a><span class="muted"><?php echo (int) $track['duration_seconds']; ?> sec</span></div><?php endforeach; ?></section>
     <?php else: ?>
-        <section class="panel hero"><img src="<?php echo e($item['profile_image']); ?>" alt=""><div><h1><?php echo e($item['artist_name']); ?></h1><p class="muted"><?php echo e($item['country']); ?> · <?php echo (int) $item['followers']; ?> followers</p><p><?php echo e($item['bio']); ?></p><form method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="follow"><input type="hidden" name="artist_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="artist.php?id=<?php echo $id; ?>"><button class="button" type="submit"><?php echo $isFollowing ? 'Following' : 'Follow'; ?></button></form></div></section>
+        <section class="panel hero"><img src="<?php echo e($item['profile_image']); ?>" alt=""><div><h1><?php echo e($item['artist_name']); ?></h1><p class="muted"><?php echo e($item['country']); ?> · <?php echo (int) $item['followers']; ?> followers</p><p><?php echo e($item['bio']); ?></p><form method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="follow"><input type="hidden" name="artist_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="artist.php?id=<?php echo $id; ?>"><button class="button" type="submit"><?php echo $isFollowing ? 'Following' : 'Follow'; ?></button></form><?php if ((int) ($_SESSION['artist_id'] ?? 0) === (int) $id): ?><p><a class="button" href="artist-dashboard.php">Open Artist Dashboard</a></p><?php endif; ?></div></section>
         <section class="panel"><h2>Popular tracks</h2><?php foreach ($tracks as $track): ?><div class="row"><a href="track.php?id=<?php echo (int) $track['track_id']; ?>"><?php echo e($track['title']); ?></a><span class="muted"><?php echo (int) $track['duration_seconds']; ?> sec</span></div><?php endforeach; ?></section>
         <section class="panel"><h2>Albums</h2><?php foreach ($albums as $album): ?><div class="row"><a href="album.php?id=<?php echo (int) $album['album_id']; ?>"><?php echo e($album['title']); ?></a><span class="muted"><?php echo e($album['release_date']); ?></span></div><?php endforeach; ?></section>
     <?php endif; ?>

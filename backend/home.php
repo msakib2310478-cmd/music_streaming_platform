@@ -23,6 +23,32 @@ foreach ($sections['latest'] as $track) {
         $sections['recent'][] = $track;
     }
 }
+$dashboardTrackIds = [];
+foreach ($sections as $sectionTracks) {
+    foreach ($sectionTracks as $track) {
+        $dashboardTrackIds[] = (int) $track['track_id'];
+    }
+}
+$dashboardTrackIds = array_values(array_unique($dashboardTrackIds));
+if ($dashboardTrackIds) {
+    $trackIdParameters = [];
+    $trackIdPlaceholders = [];
+    foreach ($dashboardTrackIds as $index => $trackId) {
+        $placeholder = ':track_id_' . $index;
+        $trackIdPlaceholders[] = $placeholder;
+        $trackIdParameters[$placeholder] = $trackId;
+    }
+    $artistIdStmt = $pdo->prepare('SELECT t.track_id, al.artist_id FROM tracks t JOIN albums al ON al.album_id = t.album_id WHERE t.track_id IN (' . implode(', ', $trackIdPlaceholders) . ')');
+    $artistIdStmt->execute($trackIdParameters);
+    $artistIdsByTrack = array_column($artistIdStmt->fetchAll(), 'artist_id', 'track_id');
+    foreach ($sections as &$sectionTracks) {
+        foreach ($sectionTracks as &$track) {
+            $track['artist_id'] = (int) ($artistIdsByTrack[$track['track_id']] ?? 0);
+        }
+        unset($track);
+    }
+    unset($sectionTracks);
+}
 $newReleases = $pdo->query("SELECT al.album_id, al.title, al.cover_image, al.release_date, ar.artist_name FROM albums al JOIN artists ar ON ar.artist_id = al.artist_id WHERE al.release_date IS NOT NULL ORDER BY al.release_date DESC LIMIT 8")->fetchAll();
 $ratedAlbums = $pdo->query("SELECT al.album_id, al.title, al.cover_image, ar.artist_name, AVG(r.rating) average_rating, COUNT(r.user_id) rating_count FROM albums al JOIN artists ar ON ar.artist_id = al.artist_id JOIN tracks t ON t.album_id = al.album_id JOIN ratings r ON r.track_id = t.track_id GROUP BY al.album_id, al.title, al.cover_image, ar.artist_name HAVING COUNT(r.user_id) >= 2 ORDER BY average_rating DESC, rating_count DESC LIMIT 8")->fetchAll();
 $popularArtists = $pdo->query("SELECT ar.artist_id, ar.artist_name, ar.profile_image, COUNT(DISTINCT af.user_id) follower_count, COUNT(DISTINCT sh.stream_id) stream_count FROM artists ar LEFT JOIN albums al ON al.artist_id = ar.artist_id LEFT JOIN tracks t ON t.album_id = al.album_id LEFT JOIN stream_history sh ON sh.track_id = t.track_id LEFT JOIN artist_follows af ON af.artist_id = ar.artist_id GROUP BY ar.artist_id, ar.artist_name, ar.profile_image ORDER BY stream_count DESC, follower_count DESC LIMIT 8")->fetchAll();
@@ -298,13 +324,13 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <div class="card-grid">
                         <?php foreach ($sections[$key] as $track): ?>
                             <article class="card">
-                                <a href="track.php?id=<?php echo (int)$track['track_id']; ?>" class="play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>">
+                                <a href="track.php?id=<?php echo (int)$track['track_id']; ?>" class="play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>" data-artist-id="<?php echo (int)$track['artist_id']; ?>">
                                     <img src="<?php echo e($track['cover_image'] ?: 'https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=400&q=80'); ?>" alt="<?php echo e($track['title']); ?> cover">
                                 </a>
-                                <h4><a href="track.php?id=<?php echo (int)$track['track_id']; ?>" class="play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>"><?php echo e($track['title']); ?></a></h4>
+                                <h4><a href="track.php?id=<?php echo (int)$track['track_id']; ?>" data-dashboard-link><?php echo e($track['title']); ?></a></h4>
                                 <p><?php echo e($track['artist_name']); ?></p>
                                 <div class="card-actions">
-                                    <button class="small-action play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>" title="Play"><i class="fas fa-play"></i></button>
+                                    <button class="small-action play-track" data-track-id="<?php echo (int)$track['track_id']; ?>" data-audio-url="<?php echo e($track['audio_url']); ?>" data-title="<?php echo e($track['title']); ?>" data-artist="<?php echo e($track['artist_name']); ?>" data-artist-id="<?php echo (int)$track['artist_id']; ?>" title="Play"><i class="fas fa-play"></i></button>
                                     <form action="api.php" method="post">
                                         <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
                                         <input type="hidden" name="action" value="favorite">
@@ -360,8 +386,8 @@ unset($_SESSION['success'], $_SESSION['error']);
             <img id="player-cover" src="https://images.unsplash.com/photo-1516280440614-37939bbacd81?auto=format&fit=crop&w=200&q=80" alt="Current track cover">
             <div class="track-meta">
                 <div class="track-info">
-                    <h5 id="player-title">Select a track</h5>
-                    <p id="player-artist">Nothing playing</p>
+                    <h5><a id="player-title" href="#">Select a track</a></h5>
+                    <p><a id="player-artist" href="#">Nothing playing</a></p>
                 </div>
                 <form class="player-favorite-form" method="post" action="api.php" data-player-favorite>
                     <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
@@ -541,8 +567,16 @@ unset($_SESSION['success'], $_SESSION['error']);
             favoriteTrackInput.value = String(currentTrack);
             updateFavoriteButtonState();
             audio.src = button.dataset.audioUrl;
-            document.getElementById('player-title').textContent = button.dataset.title;
-            document.getElementById('player-artist').textContent = button.dataset.artist;
+            const playerTitle = document.getElementById('player-title');
+            const playerArtist = document.getElementById('player-artist');
+            playerTitle.textContent = button.dataset.title;
+            playerTitle.href = `track.php?id=${encodeURIComponent(currentTrack)}`;
+            playerArtist.textContent = button.dataset.artist;
+            if (button.dataset.artistId) {
+                playerArtist.href = `artist.php?id=${encodeURIComponent(button.dataset.artistId)}`;
+            } else {
+                playerArtist.href = '#';
+            }
             audio.play().catch(() => {});
         };
 
@@ -551,6 +585,37 @@ unset($_SESSION['success'], $_SESSION['error']);
             if (!playButton) return;
             event.preventDefault();
             playTrack(playButton);
+        });
+
+        document.addEventListener('click', async event => {
+            const trackLink = event.target.closest('a[href*="track.php?id="]');
+            if (!trackLink || !dashboardView.contains(trackLink) || trackLink.classList.contains('play-track')) return;
+
+            event.preventDefault();
+            try {
+                const response = await fetch(trackLink.href, { cache: 'no-store', credentials: 'same-origin' });
+                if (!response.ok) throw new Error('Track details could not be loaded.');
+                const trackPage = new DOMParser().parseFromString(await response.text(), 'text/html');
+                const audioSource = trackPage.querySelector('audio.track-audio')?.getAttribute('src');
+                const trackHeading = trackPage.querySelector('.hero h1');
+                const title = trackHeading?.textContent.trim();
+                const artistLine = trackPage.querySelector('.hero .muted')?.textContent.trim() || '';
+                const artist = artistLine.split('·')[0].trim();
+                const trackId = new URL(trackLink.href).searchParams.get('id');
+                if (!audioSource || !title) throw new Error('Track audio is unavailable.');
+
+                playTrack({
+                    dataset: {
+                        trackId,
+                        audioUrl: new URL(audioSource, response.url || trackLink.href).href,
+                        title,
+                        artist,
+                        artistId: trackHeading.dataset.artistId,
+                    },
+                });
+            } catch (error) {
+                console.error('Unable to play selected track:', error);
+            }
         });
 
         document.querySelectorAll('.nav-arrow-btn').forEach(button => {

@@ -4,20 +4,31 @@ require_once __DIR__ . '/functions.php';
 $userId = requireUser();
 $playlistId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
 
-$playlistStmt = $pdo->prepare(
-    'SELECT playlist_id, playlist_name, is_public, user_id
-     FROM playlists
-     WHERE playlist_id = :id
-       AND (user_id = :user_id OR is_public = 1 OR EXISTS (
-           SELECT 1 FROM playlist_collaborators pc
-           WHERE pc.playlist_id = playlists.playlist_id AND pc.user_id = :collaborator_id
-       ))'
-);
-$playlistStmt->execute([
-    'id' => $playlistId,
-    'user_id' => $userId,
-    'collaborator_id' => $userId,
-]);
+$collaboratorsAvailable = true;
+try {
+    $playlistStmt = $pdo->prepare(
+        'SELECT playlist_id, playlist_name, is_public, user_id
+         FROM playlists
+         WHERE playlist_id = :id
+           AND (user_id = :user_id OR is_public = 1 OR EXISTS (
+               SELECT 1 FROM playlist_collaborators pc
+               WHERE pc.playlist_id = playlists.playlist_id AND pc.user_id = :collaborator_id
+           ))'
+    );
+    $playlistStmt->execute([
+        'id' => $playlistId,
+        'user_id' => $userId,
+        'collaborator_id' => $userId,
+    ]);
+} catch (PDOException $exception) {
+    $collaboratorsAvailable = false;
+    $playlistStmt = $pdo->prepare(
+        'SELECT playlist_id, playlist_name, is_public, user_id
+         FROM playlists
+         WHERE playlist_id = :id AND (user_id = :user_id OR is_public = 1)'
+    );
+    $playlistStmt->execute(['id' => $playlistId, 'user_id' => $userId]);
+}
 $playlist = $playlistStmt->fetch();
 
 if (!$playlist) {
@@ -33,20 +44,46 @@ $playlistsStmt = $pdo->prepare('SELECT playlist_id, playlist_name FROM playlists
 $playlistsStmt->execute(['user_id' => $userId]);
 $playlists = $playlistsStmt->fetchAll();
 
-$stmt = $pdo->prepare(
-    'SELECT pt.track_order, t.track_id, t.title, t.duration_seconds, t.audio_url, ar.artist_name
-     FROM playlist_tracks pt
-     JOIN tracks t ON t.track_id = pt.track_id
-     JOIN albums al ON al.album_id = t.album_id
-     JOIN artists ar ON ar.artist_id = al.artist_id
-     WHERE pt.playlist_id = :id
-     ORDER BY pt.track_order IS NULL, pt.track_order, t.title'
-);
-$stmt->execute(['id' => $playlistId]);
+try {
+    $stmt = $pdo->prepare(
+        'SELECT pt.track_order, t.track_id, t.title, t.duration_seconds, t.audio_url, ar.artist_name
+         FROM playlist_tracks pt
+         JOIN tracks t ON t.track_id = pt.track_id
+         JOIN albums al ON al.album_id = t.album_id
+         JOIN artists ar ON ar.artist_id = al.artist_id
+         WHERE pt.playlist_id = :id
+         ORDER BY pt.track_order IS NULL, pt.track_order, t.title'
+    );
+    $stmt->execute(['id' => $playlistId]);
+} catch (PDOException $exception) {
+    $stmt = $pdo->prepare(
+        'SELECT NULL AS track_order, t.track_id, t.title, t.duration_seconds, t.audio_url, ar.artist_name
+         FROM playlist_tracks pt
+         JOIN tracks t ON t.track_id = pt.track_id
+         JOIN albums al ON al.album_id = t.album_id
+         JOIN artists ar ON ar.artist_id = al.artist_id
+         WHERE pt.playlist_id = :id
+         ORDER BY t.title'
+    );
+    $stmt->execute(['id' => $playlistId]);
+}
 $tracks = $stmt->fetchAll();
+foreach ($tracks as $index => &$track) {
+    if ($track['track_order'] === null) {
+        $track['track_order'] = $index + 1;
+    }
+}
+unset($track);
 
 $owner = (int) $playlist['user_id'] === $userId;
-$canEdit = $owner || playlistCanEdit($pdo, $playlistId, $userId);
+$canEdit = $owner;
+if (!$canEdit && $collaboratorsAvailable) {
+    try {
+        $canEdit = playlistCanEdit($pdo, $playlistId, $userId);
+    } catch (PDOException $exception) {
+        $canEdit = false;
+    }
+}
 $allTracks = $canEdit
     ? $pdo->query(
         'SELECT t.track_id, t.title, ar.artist_name
@@ -518,7 +555,6 @@ $allTracks = $canEdit
             </div>
         </aside>
 
-<<<<<<< HEAD
         <div class="main-shell">
             <header class="top-nav">
                 <div class="nav-left">
@@ -535,88 +571,6 @@ $allTracks = $canEdit
                             <i class="fas fa-chevron-right"></i>
                         </button>
                     </div>
-=======
-    <main class="main-content page">
-        <p>
-            <a href="playlists.php">Playlists</a>
-        </p>
-
-        <section class="panel playlist-panel">
-            <h1><?php echo e($playlist['playlist_name']); ?></h1>
-            <p class="muted playlist-visibility">
-                <?php echo $playlist['is_public'] ? 'Public' : 'Private'; ?>
-            </p>
-
-            <?php if ($owner): ?>
-                <form class="playlist-form" method="post" action="api.php" data-dashboard-form>
-                    <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
-                    <input type="hidden" name="action" value="rename_playlist">
-                    <input type="hidden" name="playlist_id" value="<?php echo $playlistId; ?>">
-                    <input type="hidden" name="redirect" value="playlist.php?id=<?php echo $playlistId; ?>">
-                    <input
-                        name="playlist_name"
-                        value="<?php echo e($playlist['playlist_name']); ?>"
-                        required
-                    >
-                    <button>Rename</button>
-                </form>
-
-                <form class="playlist-form" method="post" action="api.php" data-dashboard-form>
-                    <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
-                    <input type="hidden" name="action" value="add_to_playlist">
-                    <input type="hidden" name="playlist_id" value="<?php echo $playlistId; ?>">
-                    <input type="hidden" name="redirect" value="playlist.php?id=<?php echo $playlistId; ?>">
-                    <select name="track_id" required>
-                        <?php foreach ($allTracks as $candidate): ?>
-                            <option value="<?php echo (int) $candidate['track_id']; ?>">
-                                <?php echo e($candidate['title']); ?>
-                                - <?php echo e($candidate['artist_name']); ?>
-                            </option>
-                        <?php endforeach; ?>
-                    </select>
-                    <button>Add track</button>
-                </form>
-                <form class="playlist-form" method="post" action="api.php" data-dashboard-form>
-                    <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
-                    <input type="hidden" name="action" value="invite_collaborator">
-                    <input type="hidden" name="playlist_id" value="<?php echo $playlistId; ?>">
-                    <input type="hidden" name="redirect" value="playlist.php?id=<?php echo $playlistId; ?>">
-                    <input name="collaborator_email" type="email" placeholder="Collaborator email" required>
-                    <button>Invite collaborator</button>
-                </form>
-                <?php $collaboratorsStmt = $pdo->prepare('SELECT pc.user_id, u.username, u.email FROM playlist_collaborators pc JOIN users u ON u.user_id = pc.user_id WHERE pc.playlist_id = :playlist_id ORDER BY u.username'); $collaboratorsStmt->execute(['playlist_id' => $playlistId]); $collaborators = $collaboratorsStmt->fetchAll(); ?>
-                <?php foreach ($collaborators as $collaborator): ?>
-                    <div class="row"><span><?php echo e($collaborator['username']); ?> <span class="muted"><?php echo e($collaborator['email']); ?></span></span><form method="post" action="api.php" data-dashboard-form><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="remove_collaborator"><input type="hidden" name="playlist_id" value="<?php echo $playlistId; ?>"><input type="hidden" name="collaborator_id" value="<?php echo (int)$collaborator['user_id']; ?>"><input type="hidden" name="redirect" value="playlist.php?id=<?php echo $playlistId; ?>"><button>Remove collaborator</button></form></div>
-                <?php endforeach; ?>
-            <?php endif; ?>
-
-            <?php foreach ($tracks as $track): ?>
-                <div class="row playlist-track-row">
-                    <a href="track.php?id=<?php echo (int) $track['track_id']; ?>">
-                        <?php echo (int) $track['track_order']; ?>.
-                        <?php echo e($track['title']); ?>
-                        <span class="muted">
-                            - <?php echo e($track['artist_name']); ?>
-                        </span>
-                    </a>
-
-                    <span class="muted">
-                        <?php echo (int) $track['duration_seconds']; ?> sec
-
-                        <?php if ($canEdit): ?>
-                            <form class="inline" method="post" action="api.php" data-dashboard-form><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="playlist_move"><input type="hidden" name="playlist_id" value="<?php echo $playlistId; ?>"><input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>"><input type="hidden" name="direction" value="up"><input type="hidden" name="redirect" value="playlist.php?id=<?php echo $playlistId; ?>"><button aria-label="Move track up">&uarr;</button></form>
-                            <form class="inline" method="post" action="api.php" data-dashboard-form><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="playlist_move"><input type="hidden" name="playlist_id" value="<?php echo $playlistId; ?>"><input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>"><input type="hidden" name="direction" value="down"><input type="hidden" name="redirect" value="playlist.php?id=<?php echo $playlistId; ?>"><button aria-label="Move track down">&darr;</button></form>
-                            <form class="inline" method="post" action="api.php" data-dashboard-form>
-                                <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
-                                <input type="hidden" name="action" value="remove_from_playlist">
-                                <input type="hidden" name="playlist_id" value="<?php echo $playlistId; ?>">
-                                <input type="hidden" name="track_id" value="<?php echo (int) $track['track_id']; ?>">
-                                <input type="hidden" name="redirect" value="playlist.php?id=<?php echo $playlistId; ?>">
-                                <button>Remove</button>
-                            </form>
-                        <?php endif; ?>
-                    </span>
->>>>>>> dea831d (Add upcoming music streaming features)
                 </div>
 
                 <form class="top-search" action="search.php" method="get">

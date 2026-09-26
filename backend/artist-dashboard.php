@@ -1,7 +1,6 @@
 <?php
 require_once __DIR__ . '/functions.php';
-requireUser();
-$artistId = filter_input(INPUT_GET, 'artist_id', FILTER_VALIDATE_INT) ?: 0;
+$artistId = requireArtist();
 $artistStmt = $pdo->prepare('SELECT artist_id, artist_name, genre, country FROM artists WHERE artist_id = :artist_id');
 $artistStmt->execute(['artist_id' => $artistId]);
 $artist = $artistStmt->fetch();
@@ -11,14 +10,14 @@ if (!$artist) {
 }
 $summaryStmt = $pdo->prepare("SELECT
     (SELECT COUNT(*) FROM artist_follows WHERE artist_id = :followers_artist_id) AS followers,
-    (SELECT COUNT(*) FROM stream_history sh JOIN track_artists ta ON ta.track_id = sh.track_id WHERE ta.artist_id = :streams_artist_id) AS streams,
-    (SELECT AVG(r.rating) FROM ratings r JOIN track_artists ta ON ta.track_id = r.track_id WHERE ta.artist_id = :ratings_artist_id) AS average_rating");
+    (SELECT COUNT(*) FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id WHERE al.artist_id = :streams_artist_id) AS streams,
+    (SELECT AVG(r.rating) FROM ratings r JOIN tracks t ON t.track_id = r.track_id JOIN albums al ON al.album_id = t.album_id WHERE al.artist_id = :ratings_artist_id) AS average_rating");
 $summaryStmt->execute(['followers_artist_id' => $artistId, 'streams_artist_id' => $artistId, 'ratings_artist_id' => $artistId]);
 $summary = $summaryStmt->fetch() ?: ['followers' => 0, 'streams' => 0, 'average_rating' => null];
-$topStmt = $pdo->prepare("SELECT t.title, COUNT(sh.stream_id) AS plays FROM tracks t JOIN track_artists ta ON ta.track_id = t.track_id LEFT JOIN stream_history sh ON sh.track_id = t.track_id WHERE ta.artist_id = :artist_id GROUP BY t.track_id, t.title ORDER BY plays DESC, t.title LIMIT 10");
+$topStmt = $pdo->prepare("SELECT t.title, COUNT(sh.stream_id) AS plays FROM tracks t JOIN albums al ON al.album_id = t.album_id LEFT JOIN stream_history sh ON sh.track_id = t.track_id WHERE al.artist_id = :artist_id GROUP BY t.track_id, t.title ORDER BY plays DESC, t.title LIMIT 10");
 $topStmt->execute(['artist_id' => $artistId]);
 $topSongs = $topStmt->fetchAll();
-$deviceStmt = $pdo->prepare("SELECT COALESCE(sh.device_type, 'unknown') AS device_type, COUNT(*) AS streams FROM stream_history sh JOIN track_artists ta ON ta.track_id = sh.track_id WHERE ta.artist_id = :artist_id GROUP BY sh.device_type ORDER BY streams DESC");
+$deviceStmt = $pdo->prepare("SELECT COALESCE(sh.device_type, 'unknown') AS device_type, COUNT(*) AS streams FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id WHERE al.artist_id = :artist_id GROUP BY sh.device_type ORDER BY streams DESC");
 $deviceStmt->execute(['artist_id' => $artistId]);
 $devices = $deviceStmt->fetchAll();
 $totalDeviceStreams = max(1, array_sum(array_map(static fn($row) => (int)$row['streams'], $devices)));

@@ -1,9 +1,20 @@
 <?php
 require_once __DIR__ . '/functions.php';
 $userId = requireUser();
-$queueStmt = $pdo->prepare('SELECT q.queue_id, q.queue_position, t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, COALESCE((SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR \' & \') FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id WHERE ta2.track_id = t.track_id), ar.artist_name) AS artist_names FROM playback_queue q JOIN tracks t ON t.track_id = q.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE q.user_id = :user_id ORDER BY q.queue_position, q.queue_id');
-$queueStmt->execute(['user_id' => $userId]);
-$queue = $queueStmt->fetchAll();
+$queue = [];
+try {
+	$queueStmt = $pdo->prepare('SELECT q.queue_id, q.queue_position, t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, COALESCE((SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR \' & \') FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id WHERE ta2.track_id = t.track_id), ar.artist_name) AS artist_names FROM playback_queue q JOIN tracks t ON t.track_id = q.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE q.user_id = :user_id ORDER BY q.queue_position, q.queue_id');
+	$queueStmt->execute(['user_id' => $userId]);
+	$queue = $queueStmt->fetchAll();
+} catch (PDOException $exception) {
+	try {
+		$queueStmt = $pdo->prepare('SELECT q.queue_id, q.queue_position, t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, ar.artist_name AS artist_names FROM playback_queue q JOIN tracks t ON t.track_id = q.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE q.user_id = :user_id ORDER BY q.queue_position, q.queue_id');
+		$queueStmt->execute(['user_id' => $userId]);
+		$queue = $queueStmt->fetchAll();
+	} catch (PDOException $queueException) {
+		$queue = [];
+	}
+}
 $csrf = csrfToken();
 ?>
 <!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Up Next - PulseFlow</title><link rel="stylesheet" href="../frontend/user-dashbord.css"><style>

@@ -11,12 +11,37 @@ if ($page === 'favorites' || $page === 'recently-played') {
     $where = $page === 'favorites' ? 'f.user_id = :user_id' : 'sh.user_id = :user_id';
     $join = $page === 'favorites' ? 'JOIN favorites f ON f.track_id = t.track_id' : 'JOIN stream_history sh ON sh.track_id = t.track_id';
     $date = $page === 'favorites' ? '' : ', MAX(sh.played_at) AS last_played';
-    $stmt = $pdo->prepare(trackQuery() . "$date $join WHERE $where GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, al.album_id, al.title, al.cover_image, ar.artist_id, ar.artist_name ORDER BY " . ($page === 'favorites' ? 't.title' : 'last_played DESC'));
-    $stmt->execute(['user_id' => $userId]); $rows = $stmt->fetchAll();
+    try {
+        $stmt = $pdo->prepare(trackQuery() . "$date $join WHERE $where GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, al.album_id, al.title, al.cover_image, ar.artist_id, ar.artist_name ORDER BY " . ($page === 'favorites' ? 't.title' : 'last_played DESC'));
+        $stmt->execute(['user_id' => $userId]);
+    } catch (PDOException $exception) {
+        $fallbackDate = $page === 'favorites' ? '' : ', MAX(sh.played_at) AS last_played';
+        $fallbackJoin = $page === 'favorites'
+            ? 'JOIN favorites f ON f.track_id = t.track_id'
+            : 'JOIN stream_history sh ON sh.track_id = t.track_id';
+        $fallbackWhere = $page === 'favorites' ? 'f.user_id = :user_id' : 'sh.user_id = :user_id';
+        $fallbackOrder = $page === 'favorites' ? 't.title' : 'last_played DESC';
+        $stmt = $pdo->prepare(
+            'SELECT t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image,
+                    t.lyrics, al.album_id, al.title AS album_title, al.cover_image AS album_cover,
+                    ar.artist_id, ar.artist_name' . $fallbackDate . '
+             FROM tracks t
+             JOIN albums al ON al.album_id = t.album_id
+             JOIN artists ar ON ar.artist_id = al.artist_id
+             ' . $fallbackJoin . '
+             WHERE ' . $fallbackWhere . '
+             GROUP BY t.track_id, t.title, t.duration_seconds, t.track_number, t.audio_url, t.cover_image,
+                      t.lyrics, al.album_id, al.title, al.cover_image, ar.artist_id, ar.artist_name
+             ORDER BY ' . $fallbackOrder
+        );
+        $stmt->execute(['user_id' => $userId]);
+    }
+    $rows = $stmt->fetchAll();
 } elseif ($page === 'followed-artists') {
     $stmt = $pdo->prepare('SELECT ar.artist_id, ar.artist_name, ar.profile_image, ar.bio FROM artist_follows af JOIN artists ar ON ar.artist_id = af.artist_id WHERE af.user_id = :user_id ORDER BY ar.artist_name'); $stmt->execute(['user_id' => $userId]); $rows = $stmt->fetchAll();
 } elseif ($page === 'recommendations') {
-    $stmt = $pdo->prepare("SELECT t.track_id, t.title, t.cover_image, t.audio_url, ar.artist_name,
+    try {
+        $stmt = $pdo->prepare("SELECT t.track_id, t.title, t.cover_image, t.audio_url, ar.artist_name,
         GROUP_CONCAT(DISTINCT CASE WHEN ug.genre_id IS NOT NULL THEN g.genre_name END ORDER BY g.genre_name SEPARATOR ', ') AS matching_genres,
         MAX(COALESCE(ug.genre_plays, 0)) AS genre_affinity, MAX(COALESCE(ua.artist_plays, 0)) AS artist_affinity,
         MAX(CASE WHEN af.artist_id IS NOT NULL THEN 1 ELSE 0 END) AS followed_artist,
@@ -32,11 +57,15 @@ if ($page === 'favorites' || $page === 'recently-played') {
         WHERE heard.track_id IS NULL AND NOT EXISTS (SELECT 1 FROM favorites f_seen WHERE f_seen.user_id = :favorite_user_id AND f_seen.track_id = t.track_id) AND (ug.genre_id IS NOT NULL OR ua.artist_id IS NOT NULL OR af.artist_id IS NOT NULL)
         GROUP BY t.track_id, t.title, t.cover_image, t.audio_url, ar.artist_name
         ORDER BY followed_artist DESC, artist_affinity DESC, genre_affinity DESC, related_rating DESC, t.title LIMIT 20");
-    $stmt->execute(['genre_user_id' => $userId, 'artist_user_id' => $userId, 'follow_user_id' => $userId, 'rating_user_id' => $userId, 'heard_user_id' => $userId, 'favorite_user_id' => $userId]); $rows = $stmt->fetchAll();
+        $stmt->execute(['genre_user_id' => $userId, 'artist_user_id' => $userId, 'follow_user_id' => $userId, 'rating_user_id' => $userId, 'heard_user_id' => $userId, 'favorite_user_id' => $userId]);
+        $rows = $stmt->fetchAll();
+    } catch (PDOException $exception) {
+        $rows = [];
+    }
     if ($rows) {
         $recommendationIntro = 'Your mix is based on genres you play, artists you follow, and tracks that match your ratings.';
     } else {
-        $fallback = $pdo->prepare("SELECT t.track_id, t.title, t.cover_image, t.audio_url, COALESCE((SELECT GROUP_CONCAT(a2.artist_name ORDER BY ta2.display_order, a2.artist_name SEPARATOR ' & ') FROM track_artists ta2 JOIN artists a2 ON a2.artist_id = ta2.artist_id WHERE ta2.track_id = t.track_id), ar.artist_name) AS artist_name,
+        $fallback = $pdo->prepare("SELECT t.track_id, t.title, t.cover_image, t.audio_url, ar.artist_name,
             'popular tracks' AS matching_genres, 0 AS followed_artist
             FROM tracks t JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id
             LEFT JOIN stream_history sh ON sh.track_id = t.track_id

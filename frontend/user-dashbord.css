@@ -616,6 +616,15 @@ button, a {
     text-overflow: ellipsis;
 }
 
+.track-info a {
+    color: inherit;
+    text-decoration: none;
+}
+
+.track-info a:hover {
+    text-decoration: underline;
+}
+
 .track-info p {
     margin: 0;
     font-size: 11px;

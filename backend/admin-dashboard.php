@@ -2,8 +2,10 @@
 require_once __DIR__ . '/functions.php';
 
 requireRole('admin', '../frontend/admin-login.html');
+ensureArtistAccountsTable($pdo);
 
 $users = $pdo->query("SELECT user_id, username, email, subscription_type, role, created_at FROM users ORDER BY created_at DESC")->fetchAll();
+$artistApplications = $pdo->query("SELECT aa.user_id, aa.artist_id, aa.requested_at, u.username, u.email, ar.artist_name FROM artist_accounts aa JOIN users u ON u.user_id = aa.user_id JOIN artists ar ON ar.artist_id = aa.artist_id WHERE aa.status = 'pending' ORDER BY aa.requested_at")->fetchAll();
 $artists = $pdo->query("SELECT artist_id, artist_name, genre, country FROM artists ORDER BY artist_name ASC")->fetchAll();
 $albums = $pdo->query("SELECT a.album_id, a.title, ar.artist_name, a.release_date, a.album_type FROM albums a JOIN artists ar ON ar.artist_id = a.artist_id ORDER BY a.title ASC")->fetchAll();
 $tracks = $pdo->query("SELECT t.track_id, t.title, a.title AS album_title, t.duration_seconds, t.explicit, t.track_number, t.audio_url FROM tracks t JOIN albums a ON a.album_id = t.album_id ORDER BY a.title ASC, t.track_number ASC")->fetchAll();
@@ -375,6 +377,34 @@ unset($_SESSION['success'], $_SESSION['error']);
       </section>
 
       <section class="section" id="users">
+        <h2>Artist Applications</h2>
+        <?php if ($artistApplications): ?>
+          <table>
+            <thead><tr><th>Applicant</th><th>Email</th><th>Artist profile</th><th>Applied</th><th>Review</th></tr></thead>
+            <tbody>
+              <?php foreach ($artistApplications as $application): ?>
+                <tr>
+                  <td><?php echo e($application['username']); ?></td>
+                  <td><?php echo e($application['email']); ?></td>
+                  <td><?php echo e($application['artist_name']); ?></td>
+                  <td><?php echo e($application['requested_at']); ?></td>
+                  <td>
+                    <form action="../backend/admin_actions.php" method="POST" style="display:flex;gap:8px;">
+                      <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
+                      <input type="hidden" name="action" value="review_artist_application">
+                      <input type="hidden" name="user_id" value="<?php echo (int) $application['user_id']; ?>">
+                      <button class="btn primary" type="submit" name="decision" value="approved">Approve</button>
+                      <button class="btn danger" type="submit" name="decision" value="rejected">Reject</button>
+                    </form>
+                  </td>
+                </tr>
+              <?php endforeach; ?>
+            </tbody>
+          </table>
+        <?php else: ?>
+          <p>No pending artist applications.</p>
+        <?php endif; ?>
+
         <h2>Users</h2>
         <table>
           <thead>

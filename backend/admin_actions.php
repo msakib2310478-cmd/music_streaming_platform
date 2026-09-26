@@ -2,6 +2,7 @@
 require_once __DIR__ . '/functions.php';
 
 requireRole('admin', '../frontend/admin-login.html');
+ensureArtistAccountsTable($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     header('Location: admin-dashboard.php');
@@ -11,6 +12,20 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 verifyCsrf($_POST['csrf_token'] ?? null);
 
 $action = $_POST['action'] ?? '';
+
+if ($action === 'review_artist_application') {
+    $applicantId = filter_input(INPUT_POST, 'user_id', FILTER_VALIDATE_INT) ?: 0;
+    $decision = $_POST['decision'] ?? '';
+    if ($applicantId > 0 && in_array($decision, ['approved', 'rejected'], true)) {
+        $stmt = $pdo->prepare("UPDATE artist_accounts SET status = :status, reviewed_at = CURRENT_TIMESTAMP WHERE user_id = :user_id AND status = 'pending'");
+        $stmt->execute(['status' => $decision, 'user_id' => $applicantId]);
+        flash('success', $decision === 'approved' ? 'Artist application approved.' : 'Artist application rejected.');
+    } else {
+        flash('error', 'Invalid artist application review.');
+    }
+    header('Location: admin-dashboard.php#users');
+    exit;
+}
 
 if ($action === 'delete_album') {
     $albumId = (int)($_POST['album_id'] ?? 0);
