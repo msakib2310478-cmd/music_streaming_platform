@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 verifyCsrf($_POST['csrf_token'] ?? null);
 
 $action = $_POST['action'] ?? '';
+$isAjaxAction = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'dashboard-action';
 $trackId = filter_input(INPUT_POST, 'track_id', FILTER_VALIDATE_INT) ?: 0;
 $artistId = filter_input(INPUT_POST, 'artist_id', FILTER_VALIDATE_INT) ?: 0;
 $playlistId = filter_input(INPUT_POST, 'playlist_id', FILTER_VALIDATE_INT) ?: 0;
@@ -274,6 +275,13 @@ try {
 }
 
 $redirect = $_POST['redirect'] ?? 'user-dashbord.php';
+if ($isAjaxAction) {
+    http_response_code($actionSucceeded ? 200 : 422);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => $actionSucceeded]);
+    exit;
+}
+
 if (!str_contains($redirect, '/') && !str_contains($redirect, ':')) {
     header('Location: ' . $redirect);
 } else {

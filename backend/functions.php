@@ -91,8 +91,12 @@ function verifyCsrf(?string $token): void
 
 function addNotification(PDO $pdo, int $userId, string $type, string $message, ?string $link = null): void
 {
-    $stmt = $pdo->prepare('INSERT INTO notifications (user_id, notification_type, message, link) VALUES (:user_id, :notification_type, :message, :link)');
-    $stmt->execute(['user_id' => $userId, 'notification_type' => $type, 'message' => $message, 'link' => $link]);
+    try {
+        $stmt = $pdo->prepare('INSERT INTO notifications (user_id, notification_type, message, link) VALUES (:user_id, :notification_type, :message, :link)');
+        $stmt->execute(['user_id' => $userId, 'notification_type' => $type, 'message' => $message, 'link' => $link]);
+    } catch (PDOException $exception) {
+        error_log('Notification could not be stored: ' . $exception->getMessage());
+    }
 }
 
 function loginRateLimitExceeded(PDO $pdo, string $email, string $ipAddress): bool

@@ -1012,9 +1012,11 @@ unset($_SESSION['success'], $_SESSION['error']);
                 const response = await fetch(form.action, {
                     method: 'POST',
                     body: new FormData(form),
-                    credentials: 'same-origin'
+                    credentials: 'same-origin',
+                    headers: { 'X-Requested-With': 'dashboard-action' }
                 });
-                if (!response.ok) throw new Error('Action failed.');
+                const result = await response.json().catch(() => ({ ok: false }));
+                if (!response.ok || !result.ok) throw new Error('Action failed.');
 
                 const action = form.querySelector('input[name="action"]')?.value;
                 const trackId = form.querySelector('input[name="track_id"]')?.value;
