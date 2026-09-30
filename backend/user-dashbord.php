@@ -2,14 +2,14 @@
 require __DIR__ . '/home.php';
 exit;
 require __DIR__ . '/../backend/auth.php';
-requireRole('user', '../frontend/user-login.html');
+requireRole('user', '../frontend/user-login.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PulseFlow Dashboard</title>
+    <title>FulseFLow Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -24,15 +24,15 @@ requireRole('user', '../frontend/user-login.html');
             --line: rgba(255,255,255,0.08);
             --text: #f5f7fa;
             --muted: #a3afc2;
-            --green: #1db954;
+            --green: #ff6b57;
             --shadow: 0 20px 40px rgba(0, 0, 0, 0.35);
         }
 
         * { box-sizing: border-box; }
         body {
             margin: 0;
-            font-family: 'Inter', sans-serif;
-            background: linear-gradient(180deg, #101215, #171b22 28%, #0d0f12 100%);
+            font-family: 'Space Grotesk', sans-serif;
+            background: linear-gradient(145deg, #101821, #1c2834 48%, #0b1017 100%);
             color: var(--text);
         }
         a { text-decoration: none; color: inherit; }
@@ -455,8 +455,8 @@ requireRole('user', '../frontend/user-login.html');
     <div class="main-container">
         <aside class="sidebar">
             <div class="logo">
-                <i class="fab fa-spotify"></i>
-                <span>PulseFlow</span>
+                <i class="fas fa-music"></i>
+                <span>FulseFLow</span>
             </div>
 
             <nav class="nav-links">
@@ -503,7 +503,7 @@ requireRole('user', '../frontend/user-login.html');
                 </div>
 
                 <div class="user-actions">
-                    <button class="premium-btn">Explore Premium</button>
+                    <button class="premium-btn">FulseFLow Plus</button>
                     <button class="user-icon" aria-label="User profile"><i class="fas fa-user"></i></button>
                 </div>
             </header>

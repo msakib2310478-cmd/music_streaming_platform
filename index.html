@@ -3,22 +3,22 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>PulseFlow | Music Streaming Platform</title>
+    <title>FulseFLow | Music Streaming Platform</title>
     <meta
       name="description"
-      content="PulseFlow is a modern music streaming platform for discovering music, creating playlists, and enjoying daily mixes."
+      content="FulseFLow is a modern music streaming platform for discovering music, creating playlists, and enjoying personal listening."
     />
     <style>
       :root {
-        --bg: #090909;
-        --bg-soft: #121212;
-        --panel: rgba(24, 24, 24, 0.9);
-        --panel-2: #181818;
-        --line: rgba(255, 255, 255, 0.08);
+        --bg: #0b1017;
+        --bg-soft: #171f29;
+        --panel: rgba(27, 38, 49, 0.9);
+        --panel-2: #202c38;
+        --line: rgba(180, 202, 225, 0.14);
         --text: #f5f5f5;
-        --muted: #b3b3b3;
-        --green: #1db954;
-        --green-strong: #169642;
+        --muted: #a8b7c8;
+        --green: #ff6b57;
+        --green-strong: #d94b3d;
         --white: #ffffff;
         --shadow: 0 30px 70px rgba(0, 0, 0, 0.45);
       }
@@ -33,8 +33,8 @@
 
       body {
         margin: 0;
-        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-        background: linear-gradient(180deg, #0a0a0a 0%, #121212 22%, #0a0a0a 100%);
+        font-family: "Space Grotesk", "Avenir Next", sans-serif;
+        background: linear-gradient(145deg, #101821 0%, #19242f 48%, #0b1017 100%);
         color: var(--text);
       }
 
@@ -128,7 +128,7 @@
       .btn-fill {
         background: var(--green);
         color: #06170d;
-        box-shadow: 0 12px 25px rgba(29, 185, 84, 0.28);
+        box-shadow: 0 12px 25px rgba(255, 107, 87, 0.28);
       }
 
       .btn:hover {
@@ -145,8 +145,8 @@
         content: "";
         position: absolute;
         inset: 0;
-        background: radial-gradient(circle at 20% 20%, rgba(29,185,84,0.25), transparent 30%),
-                    radial-gradient(circle at 80% 30%, rgba(29,185,84,0.12), transparent 28%);
+        background: radial-gradient(circle at 20% 20%, rgba(255,107,87,0.25), transparent 30%),
+                    radial-gradient(circle at 80% 30%, rgba(255,107,87,0.12), transparent 28%);
         pointer-events: none;
       }
 
@@ -162,9 +162,9 @@
         display: inline-block;
         margin-bottom: 16px;
         padding: 8px 12px;
-        border: 1px solid rgba(29,185,84,0.35);
+        border: 1px solid rgba(255,107,87,0.35);
         border-radius: 999px;
-        background: rgba(29,185,84,0.08);
+        background: rgba(255,107,87,0.08);
         color: #7ff0a8;
         font-size: 0.75rem;
         letter-spacing: 0.12em;
@@ -219,7 +219,7 @@
       }
 
       .player {
-        background: linear-gradient(135deg, rgba(29,185,84,0.2), rgba(18,18,18,0.9));
+        background: linear-gradient(135deg, rgba(255,107,87,0.2), rgba(18,18,18,0.9));
         border: 1px solid rgba(255,255,255,0.06);
         border-radius: 24px;
         padding: 18px;
@@ -275,7 +275,7 @@
         position: absolute;
         inset: 0 auto 0 0;
         width: 68%;
-        background: linear-gradient(90deg, var(--green), #5deca0);
+        background: linear-gradient(90deg, var(--green), #63d9d1);
         border-radius: inherit;
       }
 
@@ -346,7 +346,7 @@
         display: grid;
         place-items: center;
         border-radius: 16px;
-        background: rgba(29,185,84,0.12);
+        background: rgba(255,107,87,0.12);
         color: var(--green);
         font-size: 1.5rem;
         margin-bottom: 18px;
@@ -370,8 +370,8 @@
       .cta-box {
         padding: 36px 28px;
         border-radius: 28px;
-        background: linear-gradient(135deg, rgba(29,185,84,0.2), rgba(19,19,19,0.95));
-        border: 1px solid rgba(29,185,84,0.25);
+        background: linear-gradient(135deg, rgba(255,107,87,0.2), rgba(19,19,19,0.95));
+        border: 1px solid rgba(255,107,87,0.25);
         display: flex;
         align-items: center;
         justify-content: space-between;
@@ -463,9 +463,9 @@
   <body>
     <header class="topbar">
       <div class="container nav">
-        <a href="#" class="brand" aria-label="PulseFlow home">
+        <a href="#" class="brand" aria-label="FulseFLow home">
           <span class="brand-mark">♫</span>
-          <span>PulseFlow</span>
+          <span>FulseFLow</span>
         </a>
 
         <nav class="nav-links" aria-label="Main navigation">
@@ -476,8 +476,8 @@
         </nav>
 
         <div class="nav-actions">
-          <a class="btn btn-outline" href="frontend/user-login.html">Log in</a>
-          <a class="btn btn-fill" href="frontend/user-register.html">Get started</a>
+          <a class="btn btn-outline" href="frontend/user-login.php">Log in</a>
+          <a class="btn btn-fill" href="frontend/user-register.php">Get started</a>
         </div>
       </div>
     </header>
@@ -490,11 +490,11 @@
             <h1>Stream the songs that match your mood.</h1>
             <p>
               Discover fresh tracks, build personal playlists, and enjoy endless listening with curated recommendations,
-              daily mixes, and premium sound that follows you everywhere.
+              personal listening, and premium sound that follows you everywhere.
             </p>
 
             <div class="hero-actions">
-              <a class="btn btn-fill" href="frontend/user-register.html">Start free</a>
+              <a class="btn btn-fill" href="frontend/user-register.php">Start free</a>
               <a class="btn btn-outline" href="#features">Explore features</a>
             </div>
 
@@ -551,7 +551,7 @@
         <div class="container">
           <div class="section-head">
             <h2>Features built for music lovers</h2>
-            <a href="frontend/user-register.html">Create account</a>
+              <a href="frontend/user-register.php">Create account</a>
           </div>
 
           <div class="feature-grid">
@@ -586,7 +586,7 @@
         <div class="container">
           <div class="section-head">
             <h2>Made for every moment</h2>
-            <a href="frontend/user-login.html">Open app</a>
+              <a href="frontend/user-login.php">Open app</a>
           </div>
 
           <div class="feature-grid">
@@ -619,8 +619,8 @@
               <p>Join today and explore the music you love, all in one place.</p>
             </div>
             <div class="hero-actions">
-              <a class="btn btn-fill" href="frontend/user-register.html">Sign up free</a>
-              <a class="btn btn-outline" href="frontend/admin-login.html">Admin login</a>
+              <a class="btn btn-fill" href="frontend/user-register.php">Sign up free</a>
+              <a class="btn btn-outline" href="frontend/admin-login.php">Admin login</a>
             </div>
           </div>
         </div>
@@ -631,9 +631,9 @@
       <div class="container footer-row">
         <div class="brand">
           <span class="brand-mark">♫</span>
-          <span>PulseFlow</span>
+          <span>FulseFLow</span>
         </div>
-        <span>© 2026 PulseFlow. All rights reserved.</span>
+        <span>© 2026 FulseFLow. All rights reserved.</span>
       </div>
     </footer>
   </body>

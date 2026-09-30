@@ -7,6 +7,19 @@ function e(?string $value): string
     return htmlspecialchars($value ?? '', ENT_QUOTES, 'UTF-8');
 }
 
+function coverImageUrl(?string $coverImage): string
+{
+    $coverImage = trim((string) $coverImage);
+    $isRemoteCover = filter_var($coverImage, FILTER_VALIDATE_URL) && preg_match('/^https?:\/\//i', $coverImage);
+    $localCoverPath = $coverImage !== '' ? __DIR__ . '/../' . ltrim(parse_url($coverImage, PHP_URL_PATH) ?: $coverImage, '/') : '';
+
+    if ($isRemoteCover || ($coverImage !== '' && is_file($localCoverPath))) {
+        return $coverImage;
+    }
+
+    return '../frontend/cover-placeholder.svg';
+}
+
 function currentUserId(): int
 {
     return (int)($_SESSION['user_id'] ?? 0);
@@ -14,7 +27,7 @@ function currentUserId(): int
 
 function requireUser(): int
 {
-    redirectIfNotLoggedIn('../frontend/user-login.html');
+    redirectIfNotLoggedIn('../frontend/user-login.php');
     if (($_SESSION['role'] ?? '') === 'admin') {
         header('Location: admin-dashboard.php');
         exit;
@@ -24,7 +37,7 @@ function requireUser(): int
 
 function requireArtist(): int
 {
-    redirectIfNotLoggedIn('../frontend/user-login.html');
+    redirectIfNotLoggedIn('../frontend/user-login.php');
     if (($_SESSION['role'] ?? '') === 'admin') {
         header('Location: admin-dashboard.php');
         exit;
@@ -73,6 +86,29 @@ function verifyCsrf(?string $token): void
     if (!$token || !hash_equals($_SESSION['csrf_token'] ?? '', $token)) {
         http_response_code(419);
         exit('Invalid request token.');
+    }
+}
+
+function addNotification(PDO $pdo, int $userId, string $type, string $message, ?string $link = null): void
+{
+    $stmt = $pdo->prepare('INSERT INTO notifications (user_id, notification_type, message, link) VALUES (:user_id, :notification_type, :message, :link)');
+    $stmt->execute(['user_id' => $userId, 'notification_type' => $type, 'message' => $message, 'link' => $link]);
+}
+
+function loginRateLimitExceeded(PDO $pdo, string $email, string $ipAddress): bool
+{
+    $stmt = $pdo->prepare('SELECT COUNT(*) FROM login_attempts WHERE email = :email AND ip_address = :ip_address AND succeeded = 0 AND attempted_at >= CURRENT_TIMESTAMP - INTERVAL 15 MINUTE');
+    $stmt->execute(['email' => $email, 'ip_address' => $ipAddress]);
+    return (int) $stmt->fetchColumn() >= 5;
+}
+
+function recordLoginAttempt(PDO $pdo, string $email, string $ipAddress, bool $succeeded): void
+{
+    $stmt = $pdo->prepare('INSERT INTO login_attempts (email, ip_address, succeeded) VALUES (:email, :ip_address, :succeeded)');
+    $stmt->execute(['email' => $email, 'ip_address' => $ipAddress, 'succeeded' => $succeeded ? 1 : 0]);
+    if ($succeeded) {
+        $cleanup = $pdo->prepare('DELETE FROM login_attempts WHERE email = :email AND ip_address = :ip_address');
+        $cleanup->execute(['email' => $email, 'ip_address' => $ipAddress]);
     }
 }
 
@@ -146,6 +182,10 @@ function storeUploadedAudio(array $file): string
         throw new RuntimeException('The audio file must be smaller than 35 MB.');
     }
 
+    if (($file['size'] ?? 0) <= 0 || empty($file['tmp_name']) || !is_uploaded_file($file['tmp_name'])) {
+        throw new RuntimeException('The uploaded audio file is invalid.');
+    }
+
     $allowedMimeTypes = [
         'audio/mp3' => 'mp3',
         'audio/mpeg' => 'mp3',
@@ -164,10 +204,7 @@ function storeUploadedAudio(array $file): string
     ];
     $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!isset($allowedMimeTypes[$mimeType]) && $extension === 'mp3') {
-        $mimeType = 'audio/mpeg';
-    }
-    if (!isset($allowedMimeTypes[$mimeType])) {
+    if (!isset($allowedMimeTypes[$mimeType]) || !in_array($extension, ['mp3', 'wav', 'ogg', 'm4a', 'mp4'], true)) {
         throw new RuntimeException('Unsupported audio format detected: ' . $mimeType);
     }
 

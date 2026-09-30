@@ -4,17 +4,17 @@ services:
     container_name: pulseflow-mysql
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: music_streaming_db
-      MYSQL_USER: music_app
-      MYSQL_PASSWORD: music_app_local
-      MYSQL_ROOT_PASSWORD: pulseflow_root_local
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-music_streaming_db}
+      MYSQL_USER: ${MYSQL_USER:-music_app}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-music_app_local}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-pulseflow_root_local}
     ports:
       - "3306:3306"
     volumes:
       - pulseflow_mysql_data:/var/lib/mysql
       - ./music_streaming_db.sql:/docker-entrypoint-initdb.d/01-music_streaming_db.sql:ro
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -ppulseflow_root_local --silent"]
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u root -p$${MYSQL_ROOT_PASSWORD} --silent"]
       interval: 5s
       timeout: 5s
       retries: 20

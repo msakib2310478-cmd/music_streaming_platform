@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/functions.php';
 
-requireRole('admin', '../frontend/admin-login.html');
+requireRole('admin', '../frontend/admin-login.php');
 ensureArtistAccountsTable($pdo);
 
 $users = $pdo->query("SELECT user_id, username, email, subscription_type, role, created_at FROM users ORDER BY created_at DESC")->fetchAll();
@@ -25,17 +25,17 @@ unset($_SESSION['success'], $_SESSION['error']);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>PulseFlow Admin Dashboard</title>
+  <title>FulseFLow Admin Dashboard</title>
   <style>
     :root {
-      --bg: #0f1115;
-      --panel: #171b22;
-      --panel-alt: #1d232d;
-      --line: rgba(255,255,255,0.08);
+      --bg: #0e141c;
+      --panel: #1c2733;
+      --panel-alt: #253442;
+      --line: rgba(180,202,225,0.14);
       --text: #edf2f7;
-      --muted: #a3b0c2;
-      --green: #1db954;
-      --green-dark: #169642;
+      --muted: #a8b7c8;
+      --green: #ff6b57;
+      --green-dark: #d94b3d;
       --red: #ef4444;
       --shadow: 0 20px 40px rgba(0,0,0,0.25);
     }
@@ -44,7 +44,7 @@ unset($_SESSION['success'], $_SESSION['error']);
     body {
       margin:0;
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: linear-gradient(180deg, #0b0d10, #12181d);
+      background: linear-gradient(145deg, #101821, #1c2834 48%, #0b1017);
       color: var(--text);
     }
 
@@ -230,8 +230,8 @@ unset($_SESSION['success'], $_SESSION['error']);
       padding:5px 10px;
       border-radius:999px;
       font-size:0.75rem;
-      background: rgba(29,185,84,0.14);
-      border:1px solid rgba(29,185,84,0.28);
+      background: rgba(255,107,87,0.14);
+      border:1px solid rgba(255,107,87,0.28);
       color:#b9f7d1;
     }
 
@@ -272,37 +272,22 @@ unset($_SESSION['success'], $_SESSION['error']);
       padding:12px 14px;
       margin-bottom:18px;
       border-radius:12px;
-      border:1px solid rgba(29,185,84,0.25);
-      background: rgba(29,185,84,0.12);
+      border:1px solid rgba(255,107,87,0.25);
+      background: rgba(255,107,87,0.12);
       color:#d9f9ea;
     }
 
     @media (max-width: 900px) {
-      .layout { display:flex !important; }
-      .sidebar { width:260px !important; border-right:1px solid var(--line) !important; border-bottom:none !important; }
-      .cards { grid-template-columns: repeat(3, minmax(180px, 1fr)) !important; }
+      .layout { display:flex; flex-direction:column; }
+      .sidebar { width:100%; border-right:none; border-bottom:1px solid var(--line); }
+      .cards { grid-template-columns: repeat(2, minmax(180px, 1fr)); }
+      .main { padding:24px 20px; }
     }
 
-    /* Force desktop layout everywhere */
-    html, body {
-      min-width: 1100px;
-    }
-
-    body {
-      overflow-x: auto;
-    }
-
-    .layout {
-      display:flex !important;
-    }
-
-    .sidebar {
-      width: 260px !important;
-      border-right:1px solid var(--line) !important;
-    }
-
-    .cards {
-      grid-template-columns: repeat(3, minmax(180px, 1fr)) !important;
+    @media (max-width: 560px) {
+      .main { padding:18px 14px; }
+      .topbar { align-items:flex-start; flex-direction:column; }
+      .cards { grid-template-columns:1fr; }
     }
   </style>
 </head>
@@ -311,7 +296,7 @@ unset($_SESSION['success'], $_SESSION['error']);
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-dot">♫</span>
-        <span>PulseFlow</span>
+        <span>FulseFLow</span>
       </div>
 
       <nav class="nav">

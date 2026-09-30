@@ -1,4 +1,4 @@
 <?php
 require __DIR__ . '/auth.php';
 
-logoutAndRedirect('../frontend/user-login.html');
+logoutAndRedirect('../frontend/user-login.php');

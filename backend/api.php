@@ -24,10 +24,12 @@ try {
             $stmt = $pdo->prepare('DELETE FROM favorites WHERE user_id = :user_id AND track_id = :track_id');
             $stmt->execute(['user_id' => $userId, 'track_id' => $trackId]);
             flash('success', 'Removed from favorites.');
+            addNotification($pdo, $userId, 'favorite', 'Removed a track from your favorites.', 'favorites.php');
         } else {
             $stmt = $pdo->prepare('INSERT INTO favorites (user_id, track_id) VALUES (:user_id, :track_id)');
             $stmt->execute(['user_id' => $userId, 'track_id' => $trackId]);
             flash('success', 'Added to favorites.');
+            addNotification($pdo, $userId, 'favorite', 'Added a track to your favorites.', 'favorites.php');
         }
     } elseif ($action === 'rate' && $trackId > 0) {
         $rating = filter_input(INPUT_POST, 'rating', FILTER_VALIDATE_INT);
@@ -78,6 +80,7 @@ try {
         $insert = $pdo->prepare('INSERT INTO playback_queue (user_id, track_id, queue_position) VALUES (:user_id, :track_id, :queue_position)');
         $insert->execute(['user_id' => $userId, 'track_id' => $trackId, 'queue_position' => (int)$positionStmt->fetchColumn()]);
         flash('success', 'Track added to Up Next.');
+        addNotification($pdo, $userId, 'queue', 'A track was added to your Up Next queue.', 'queue.php');
     } elseif ($action === 'queue_remove' && $queueId > 0) {
         $delete = $pdo->prepare('DELETE FROM playback_queue WHERE queue_id = :queue_id AND user_id = :user_id');
         $delete->execute(['queue_id' => $queueId, 'user_id' => $userId]);
@@ -179,6 +182,7 @@ try {
         $pdo->commit();
         $_SESSION['subscription_type'] = $plan;
         flash('success', $plan === 'premium' ? 'Premium plan activated.' : 'Premium plan cancelled.');
+        addNotification($pdo, $userId, 'subscription', $plan === 'premium' ? 'FulseFLow Plus is now active.' : 'Your FulseFLow Plus plan was cancelled.', 'subscriptions.php');
     } elseif ($action === 'create_playlist') {
         $name = trim($_POST['playlist_name'] ?? '');
         if ($name === '' || strlen($name) > 100) {
@@ -187,10 +191,12 @@ try {
         $stmt = $pdo->prepare('INSERT INTO playlists (user_id, playlist_name, is_public) VALUES (:user_id, :playlist_name, 0)');
         $stmt->execute(['user_id' => $userId, 'playlist_name' => $name]);
         flash('success', 'Playlist created.');
+        addNotification($pdo, $userId, 'playlist', 'Your playlist was created.', 'playlists.php');
     } elseif ($action === 'add_to_playlist' && $trackId > 0 && $playlistId > 0 && playlistCanEdit($pdo, $playlistId, $userId)) {
         $stmt = $pdo->prepare('INSERT INTO playlist_tracks (playlist_id, track_id, track_order) SELECT p.playlist_id, :track_id, COALESCE(MAX(pt.track_order), 0) + 1 FROM playlists p LEFT JOIN playlist_tracks pt ON pt.playlist_id = p.playlist_id WHERE p.playlist_id = :playlist_id GROUP BY p.playlist_id ON DUPLICATE KEY UPDATE track_order = VALUES(track_order)');
         $stmt->execute(['track_id' => $trackId, 'playlist_id' => $playlistId]);
         flash('success', 'Track added to playlist.');
+        addNotification($pdo, $userId, 'playlist', 'A track was added to your playlist.', 'playlists.php');
     } elseif ($action === 'remove_from_playlist' && $trackId > 0 && $playlistId > 0 && playlistCanEdit($pdo, $playlistId, $userId)) {
         $stmt = $pdo->prepare('DELETE FROM playlist_tracks WHERE playlist_id = :playlist_id AND track_id = :track_id');
         $stmt->execute(['track_id' => $trackId, 'playlist_id' => $playlistId]);

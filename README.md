@@ -1,6 +1,6 @@
-# PulseFlow Music Streaming Platform
+# FulseFLow Music Streaming Platform
 
-PulseFlow is a PHP and MySQL music streaming application. It provides user authentication, music discovery, playback tracking, playlists, favorites, ratings, artist follows, recommendations, subscriptions, and an administrator dashboard.
+FulseFLow is a PHP and MySQL music streaming application. It provides user authentication, music discovery, playback tracking, playlists, favorites, ratings, artist follows, recommendations, subscriptions, and an administrator dashboard.
 
 The project is intended for local development and demonstration. Docker supplies the MySQL database, while PHP's built-in development server serves the application.
 
@@ -36,7 +36,7 @@ The project is intended for local development and demonstration. Docker supplies
 - Artist follow/unfollow
 - Playlist creation, renaming, visibility changes, track management, and ordering
 - Recently played tracks
-- Spotify-style Up Next queue with add, remove, reorder, and clear actions
+- FulseFLow-style Up Next queue with add, remove, reorder, and clear actions
 - Collaborative playlists with owner-managed invitations and collaborator track editing
 - Multiple credited artists per track, including featured performers
 - Genre-based recommendations
@@ -87,9 +87,9 @@ The project is intended for local development and demonstration. Docker supplies
 │   ├── validate_setup.php     Database schema validator
 │   └── uploads/audio/         Local audio upload destination
 ├── frontend/
-│   ├── user-login.html        User login page
-│   ├── user-register.html     User registration page
-│   ├── admin-login.html        Administrator login page
+│   ├── user-login.php         User login page
+│   ├── user-register.php      User registration page
+│   ├── admin-login.php        Administrator login page
 │   └── *.css                  Shared authentication and dashboard styles
 ├── music_streaming_db.sql     Complete schema, seed data, and views
 ├── docker-compose.yml         MySQL development service
@@ -170,9 +170,9 @@ php -S 0.0.0.0:8000 -t .
 Open:
 
 - Public page: `http://localhost:8000/`
-- User login: `http://localhost:8000/frontend/user-login.html`
-- User registration: `http://localhost:8000/frontend/user-register.html`
-- Administrator login: `http://localhost:8000/frontend/admin-login.html`
+- User login: `http://localhost:8000/frontend/user-login.php`
+- User registration: `http://localhost:8000/frontend/user-register.php`
+- Administrator login: `http://localhost:8000/frontend/admin-login.php`
 
 The PHP server must be started with the repository root as its document root. The frontend forms use relative paths to the `backend/` directory.
 
@@ -203,9 +203,9 @@ Do not commit real passwords or production credentials. Use a secrets manager or
 
 ### Register and log in as a user
 
-1. Open `frontend/user-register.html`.
+1. Open `frontend/user-register.php`.
 2. Submit first name, last name, email, and password.
-3. Log in through `frontend/user-login.html`.
+3. Log in through `frontend/user-login.php`.
 4. The application redirects the user to `backend/user-dashbord.php`, which loads the database-backed dashboard from `backend/home.php`.
 
 ### Log in as an administrator
@@ -216,7 +216,7 @@ The SQL seed includes an administrator account. For local development, `backend/
 php backend/create_admin.php
 ```
 
-Then open `frontend/admin-login.html`.
+Then open `frontend/admin-login.php`.
 
 ### Manage music
 

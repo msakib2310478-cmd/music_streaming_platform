@@ -108,7 +108,7 @@ if ($type === 'track') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo e($title); ?> - PulseFlow</title>
+    <title><?php echo e($title); ?> - FulseFLow</title>
     <link rel="stylesheet" href="../frontend/user-dashbord.css">
     <style>
         body { min-width: 1100px; overflow-x: auto; }
@@ -118,7 +118,7 @@ if ($type === 'track') {
         .hero img { width: 180px; height: 180px; object-fit: cover; border-radius: 12px; }
         .row { display: flex; justify-content: space-between; align-items: center; padding: 14px 0; border-bottom: 1px solid var(--border); }
         .muted { color: var(--text-muted); }
-        .button { background: var(--spotify-green); border: 0; border-radius: 20px; padding: 10px 16px; font-weight: 700; }
+        .button { background: var(--accent); border: 0; border-radius: 20px; padding: 10px 16px; font-weight: 700; }
         .inline { display: inline; }
         .rating { color: #ffd166; }
         .genres { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -151,7 +151,7 @@ if ($type === 'track') {
             <button type="submit" aria-label="Search">Search</button>
         </div>
     </form>
-    <div class="user-actions"><a class="premium-btn" href="subscriptions.php">Explore Premium</a><button class="user-icon-btn" type="button" aria-label="Account">&#9679;</button></div>
+    <div class="user-actions"><a class="premium-btn" href="subscriptions.php">FulseFLow Plus</a><button class="user-icon-btn" type="button" aria-label="Account">&#9679;</button></div>
 </header>
 <main class="main-content page">
     <p><a href="user-dashbord.php" data-dashboard-link>&larr; Home</a></p>

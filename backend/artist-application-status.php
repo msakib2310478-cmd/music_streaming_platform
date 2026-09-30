@@ -1,6 +1,6 @@
 <?php
 require_once __DIR__ . '/functions.php';
-redirectIfNotLoggedIn('../frontend/user-login.html');
+redirectIfNotLoggedIn('../frontend/user-login.php');
 ensureArtistAccountsTable($pdo);
 
 $stmt = $pdo->prepare('SELECT aa.status, ar.artist_name FROM artist_accounts aa JOIN artists ar ON ar.artist_id = aa.artist_id WHERE aa.user_id = :user_id');
@@ -14,7 +14,7 @@ $artistName = $application['artist_name'] ?? '';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Artist application status - PulseFlow</title>
+    <title>Artist application status - FulseFLow</title>
     <link rel="stylesheet" href="../frontend/user-dashbord.css">
     <style>
         body { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #101114; color: #f4f5f7; }

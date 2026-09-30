@@ -157,9 +157,38 @@ CREATE TABLE `users` (
   `username` varchar(50) COLLATE utf8mb4_general_ci NOT NULL,
   `email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
   `password_hash` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `first_name` varchar(80) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `last_name` varchar(80) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `display_name` varchar(80) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `country` varchar(100) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `bio` text COLLATE utf8mb4_general_ci,
+  `avatar_url` varchar(500) COLLATE utf8mb4_general_ci DEFAULT NULL,
   `subscription_type` enum('free','premium') COLLATE utf8mb4_general_ci DEFAULT 'free',
   `role` enum('user','admin') COLLATE utf8mb4_general_ci DEFAULT 'user',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `login_attempts` (
+  `attempt_id` bigint NOT NULL AUTO_INCREMENT,
+  `email` varchar(100) COLLATE utf8mb4_general_ci NOT NULL,
+  `ip_address` varchar(45) COLLATE utf8mb4_general_ci NOT NULL,
+  `succeeded` tinyint(1) NOT NULL DEFAULT 0,
+  `attempted_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`attempt_id`),
+  KEY `idx_login_attempts_lookup` (`email`, `ip_address`, `attempted_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+CREATE TABLE IF NOT EXISTS `notifications` (
+  `notification_id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `notification_type` varchar(40) COLLATE utf8mb4_general_ci NOT NULL,
+  `message` varchar(255) COLLATE utf8mb4_general_ci NOT NULL,
+  `link` varchar(255) COLLATE utf8mb4_general_ci DEFAULT NULL,
+  `is_read` tinyint(1) NOT NULL DEFAULT 0,
+  `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`notification_id`),
+  KEY `idx_notifications_user_read` (`user_id`, `is_read`, `created_at`),
+  CONSTRAINT `fk_notifications_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`user_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --

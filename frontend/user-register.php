@@ -6,10 +6,11 @@ session_start();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spotify | User Register</title>
+    <title>FulseFLow | User Register</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="auth-style.css" />
     <style>
       .flash-message {
@@ -25,8 +26,8 @@ session_start();
         color: #ffd4d9;
       }
       .flash-message.success {
-        background: rgba(29, 185, 84, 0.12);
-        border-color: rgba(29, 185, 84, 0.4);
+        background: rgba(255, 107, 87, 0.12);
+        border-color: rgba(255, 107, 87, 0.4);
         color: #d4f8e3;
       }
     </style>
@@ -35,8 +36,8 @@ session_start();
     <div class="auth-shell">
       <div class="auth-visual">
         <div class="brand">
-          <span class="brand-logo"><i class="fa-brands fa-spotify"></i></span>
-          <span>Spotify</span>
+          <span class="brand-logo"><i class="fa-brands fa-music"></i></span>
+          <span>FulseFLow</span>
         </div>
 
         <div class="visual-copy">
@@ -48,7 +49,7 @@ session_start();
 
           <div class="feature-badges">
             <span>Free playlists</span>
-            <span>Daily mixes</span>
+            <span>Personal listening</span>
             <span>New releases</span>
           </div>
         </div>
@@ -61,13 +62,6 @@ session_start();
             <h2>Sign up</h2>
             <p>Register to start your music journey.</p>
           </div>
-
-          <div class="social-row">
-            <button class="social-btn" type="button">Google</button>
-            <button class="social-btn" type="button">Facebook</button>
-          </div>
-
-          <div class="divider">or sign up with email</div>
 
           <?php if (isset($_SESSION['error'])): ?>
             <div class="flash-message error"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
@@ -116,10 +110,10 @@ session_start();
           </form>
 
           <div class="form-foot">
-            Already have an account? <a href="user-login.html">Log in</a>
+            Already have an account? <a href="user-login.php">Log in</a>
           </div>
           <div class="form-foot">
-            <a href="admin-login.html">Admin login</a>
+            <a href="admin-login.php">Admin login</a>
           </div>
           <div class="form-foot">
             Are you an artist? <a href="../backend/artist-register.php">Apply for an artist account</a>

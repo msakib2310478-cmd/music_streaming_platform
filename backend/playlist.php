@@ -109,7 +109,7 @@ $allTracks = $canEdit
             margin: 0;
             background: #0d0f12;
             color: #fff;
-            font-family: 'Inter', sans-serif;
+            font-family: 'Space Grotesk', sans-serif;
         }
 
         .app-shell {
@@ -142,7 +142,7 @@ $allTracks = $canEdit
         }
 
         .logo i {
-            color: var(--spotify-green, #1ed760);
+            color: var(--accent, #ff6b57);
             font-size: 1.8rem;
         }
 
@@ -259,7 +259,7 @@ $allTracks = $canEdit
         }
 
         .playlist-track-row .track-title-wrap a:hover {
-            color: var(--spotify-green);
+            color: var(--accent);
         }
 
         .play-track-btn {
@@ -276,12 +276,12 @@ $allTracks = $canEdit
         }
 
         .play-track-btn:hover {
-            border-color: var(--spotify-green);
-            color: var(--spotify-green);
+            border-color: var(--accent);
+            color: var(--accent);
         }
 
         .control-buttons .small-action.active {
-            color: var(--spotify-green);
+            color: var(--accent);
         }
 
         .muted {
@@ -441,7 +441,7 @@ $allTracks = $canEdit
         }
 
         .user-icon-btn:hover {
-            border-color: var(--spotify-green);
+            border-color: var(--accent);
         }
 
         .account-menu {
@@ -475,7 +475,7 @@ $allTracks = $canEdit
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #1ed760, #6ee7b7);
+            background: linear-gradient(135deg, #ff6b57, #63d9d1);
             color: #111;
             display: flex;
             align-items: center;
@@ -524,8 +524,8 @@ $allTracks = $canEdit
     <div class="app-shell">
         <aside class="sidebar">
             <div class="logo">
-                <i class="fab fa-spotify"></i>
-                <span>PulseFlow</span>
+                <i class="fas fa-music"></i>
+                <span>FulseFLow</span>
             </div>
 
             <nav class="nav-links">
@@ -589,7 +589,7 @@ $allTracks = $canEdit
                 </form>
 
                 <div class="user-actions">
-                    <a class="premium-btn" href="subscriptions.php">Explore Premium</a>
+                    <a class="premium-btn" href="subscriptions.php">FulseFLow Plus</a>
 
                     <div class="user-menu-wrap">
                         <button class="user-icon-btn" type="button" aria-label="Account information">

@@ -1,10 +1,9 @@
 <?php
-require __DIR__ . '/auth.php';
-require __DIR__ . '/db.php';
+require __DIR__ . '/functions.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     $_SESSION['error'] = 'Invalid request method.';
-    header('Location: ../frontend/user-register.html');
+    header('Location: ../frontend/user-register.php');
     exit;
 }
 
@@ -16,25 +15,25 @@ $confirmPassword = $_POST['confirm_password'] ?? '';
 
 if ($firstName === '' || $lastName === '' || $email === '' || $password === '' || $confirmPassword === '') {
     $_SESSION['error'] = 'Please fill in all fields.';
-    header('Location: ../frontend/user-register.html');
+    header('Location: ../frontend/user-register.php');
     exit;
 }
 
 if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
     $_SESSION['error'] = 'Please enter a valid email address.';
-    header('Location: ../frontend/user-register.html');
+    header('Location: ../frontend/user-register.php');
     exit;
 }
 
 if (strlen($password) < 6) {
     $_SESSION['error'] = 'Password must be at least 6 characters long.';
-    header('Location: ../frontend/user-register.html');
+    header('Location: ../frontend/user-register.php');
     exit;
 }
 
 if ($password !== $confirmPassword) {
     $_SESSION['error'] = 'Passwords do not match.';
-    header('Location: ../frontend/user-register.html');
+    header('Location: ../frontend/user-register.php');
     exit;
 }
 
@@ -49,24 +48,27 @@ $checkStmt->execute([':email' => $email]);
 
 if ($checkStmt->fetch()) {
     $_SESSION['error'] = 'This email is already registered.';
-    header('Location: ../frontend/user-register.html');
+    header('Location: ../frontend/user-register.php');
     exit;
 }
 
 $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
 
 $insertStmt = $pdo->prepare(
-    'INSERT INTO users (username, email, password_hash, subscription_type, role) VALUES (:username, :email, :password_hash, :subscription_type, :role)'
+    'INSERT INTO users (username, email, password_hash, first_name, last_name, display_name, subscription_type, role) VALUES (:username, :email, :password_hash, :first_name, :last_name, :display_name, :subscription_type, :role)'
 );
 
 $insertStmt->execute([
     ':username' => $username,
     ':email' => $email,
     ':password_hash' => $hashedPassword,
+    ':first_name' => $firstName,
+    ':last_name' => $lastName,
+    ':display_name' => $firstName . ' ' . $lastName,
     ':subscription_type' => 'free',
     ':role' => 'user',
 ]);
 
 $_SESSION['success'] = 'Registration successful! Please log in.';
-header('Location: ../frontend/user-login.html');
+header('Location: ../frontend/user-login.php');
 exit;

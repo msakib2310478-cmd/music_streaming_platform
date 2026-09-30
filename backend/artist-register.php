@@ -62,26 +62,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Artist account application - PulseFlow</title>
+    <title>Artist account application - FulseFLow</title>
     <link rel="stylesheet" href="../frontend/auth-style.css">
     <style>
         .artist-application { max-width: 560px; margin: 7vh auto; padding: 32px; background: #171b22; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; color: #edf2f7; }
         .artist-application form { display: grid; gap: 14px; }
         .artist-application label { display: grid; gap: 6px; color: #a3b0c2; }
         .artist-application input, .artist-application select { width: 100%; padding: 12px; border: 1px solid rgba(255,255,255,.12); border-radius: 8px; background: #1d232d; color: #edf2f7; }
-        .artist-application button { padding: 12px 16px; border: 0; border-radius: 999px; background: #1db954; color: #07130b; font-weight: 700; cursor: pointer; }
-        .notice { padding: 12px; margin: 14px 0; border-radius: 8px; background: rgba(29,185,84,.14); }
+        .artist-application button { padding: 12px 16px; border: 0; border-radius: 999px; background: #ff6b57; color: #07130b; font-weight: 700; cursor: pointer; }
+        .notice { padding: 12px; margin: 14px 0; border-radius: 8px; background: rgba(255,107,87,.14); }
         .notice.error { background: rgba(239,68,68,.16); }
         .artist-application a { color: #b9f7d1; }
     </style>
 </head>
 <body>
     <main class="artist-application">
-        <p><a href="../frontend/user-register.html">Listener registration</a></p>
+        <p><a href="../frontend/user-register.php">Listener registration</a></p>
         <h1>Artist account application</h1>
         <p>Apply to manage the dashboard for an existing artist profile. Access is enabled after admin approval.</p>
         <?php if ($error !== ''): ?><div class="notice error"><?php echo e($error); ?></div><?php endif; ?>
-        <?php if ($success !== ''): ?><div class="notice"><?php echo e($success); ?> <a href="../frontend/user-login.html">Log in</a></div><?php endif; ?>
+        <?php if ($success !== ''): ?><div class="notice"><?php echo e($success); ?> <a href="../frontend/user-login.php">Log in</a></div><?php endif; ?>
         <form method="post" action="artist-register.php">
             <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
             <label>First name<input name="first_name" autocomplete="given-name" required></label>

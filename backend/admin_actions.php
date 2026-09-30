@@ -1,7 +1,7 @@
 <?php
 require_once __DIR__ . '/functions.php';
 
-requireRole('admin', '../frontend/admin-login.html');
+requireRole('admin', '../frontend/admin-login.php');
 ensureArtistAccountsTable($pdo);
 
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {

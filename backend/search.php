@@ -3,6 +3,10 @@ require_once __DIR__ . '/functions.php';
 requireUser();
 
 $query = trim($_GET['q'] ?? '');
+$filter = $_GET['type'] ?? 'all';
+if (!in_array($filter, ['all', 'artists', 'albums', 'tracks', 'genres'], true)) {
+    $filter = 'all';
+}
 $artists = $albums = $tracks = $genres = [];
 
 if ($query !== '') {
@@ -90,6 +94,13 @@ if ($query !== '') {
         'user_id' => currentUserId(),
         'query' => $query,
     ]);
+
+    if ($filter !== 'all') {
+        if ($filter !== 'artists') $artists = [];
+        if ($filter !== 'albums') $albums = [];
+        if ($filter !== 'tracks') $tracks = [];
+        if ($filter !== 'genres') $genres = [];
+    }
 }
 ?>
 <!doctype html>
@@ -135,7 +146,7 @@ if ($query !== '') {
 
         button {
             padding: 12px;
-            background: var(--spotify-green);
+            background: var(--accent);
             border: 0;
             border-radius: 8px;
         }
@@ -290,7 +301,7 @@ if ($query !== '') {
         }
 
         .user-icon-btn:hover {
-            border-color: var(--spotify-green);
+            border-color: var(--accent);
         }
 
         .account-menu {
@@ -324,7 +335,7 @@ if ($query !== '') {
             width: 38px;
             height: 38px;
             border-radius: 50%;
-            background: linear-gradient(135deg, #1ed760, #6ee7b7);
+            background: linear-gradient(135deg, #ff6b57, #63d9d1);
             color: #111;
             display: flex;
             align-items: center;
@@ -402,7 +413,7 @@ if ($query !== '') {
         </form>
 
         <div class="user-actions">
-            <a class="premium-btn" href="subscriptions.php">Explore Premium</a>
+            <a class="premium-btn" href="subscriptions.php">FulseFLow Plus</a>
 
             <div class="user-menu-wrap">
                 <button class="user-icon-btn" type="button" aria-label="Account information">
@@ -442,6 +453,11 @@ if ($query !== '') {
     </header>
 
     <main class="main-content page">
+        <nav class="search-filters" aria-label="Search result filters">
+            <?php foreach (['all' => 'All', 'artists' => 'Artists', 'albums' => 'Albums', 'tracks' => 'Tracks', 'genres' => 'Genres'] as $filterKey => $filterLabel): ?>
+                <a class="<?php echo $filter === $filterKey ? 'active' : ''; ?>" href="search.php?q=<?php echo urlencode($query); ?>&type=<?php echo $filterKey; ?>" data-dashboard-link><?php echo $filterLabel; ?></a>
+            <?php endforeach; ?>
+        </nav>
         <?php foreach ([
             ['Artists', $artists, 'artist.php', 'artist_id', 'artist_name'],
             ['Albums', $albums, 'album.php', 'album_id', 'title'],

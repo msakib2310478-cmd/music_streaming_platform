@@ -6,10 +6,11 @@ session_start();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Spotify | Admin Login</title>
+    <title>FulseFLow | User Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <link rel="stylesheet" href="auth-style.css" />
     <style>
       .flash-message {
@@ -25,8 +26,8 @@ session_start();
         color: #ffd4d9;
       }
       .flash-message.success {
-        background: rgba(29, 185, 84, 0.12);
-        border-color: rgba(29, 185, 84, 0.4);
+        background: rgba(255, 107, 87, 0.12);
+        border-color: rgba(255, 107, 87, 0.4);
         color: #d4f8e3;
       }
     </style>
@@ -35,21 +36,21 @@ session_start();
     <div class="auth-shell">
       <div class="auth-visual">
         <div class="brand">
-          <span class="brand-logo"><i class="fa-brands fa-spotify"></i></span>
-          <span>Spotify</span>
+          <span class="brand-logo"><i class="fa-brands fa-music"></i></span>
+          <span>FulseFLow</span>
         </div>
 
         <div class="visual-copy">
-          <small>Admin Portal</small>
-          <h1>Manage the platform efficiently.</h1>
+          <small>Your sound, your space</small>
+          <h1>Discover your next favorite song.</h1>
           <p>
-            Monitor users, manage music content, and control premium features with secure access.
+            Stream music, build playlists, and enjoy a listening experience designed for everyday life.
           </p>
 
           <div class="feature-badges">
-            <span>Content tools</span>
-            <span>User controls</span>
-            <span>Reports</span>
+            <span>Curated playlists</span>
+            <span>Offline saves</span>
+            <span>Premium access</span>
           </div>
         </div>
       </div>
@@ -57,17 +58,10 @@ session_start();
       <div class="auth-panel">
         <div class="auth-panel-inner">
           <div class="panel-top">
-            <div class="eyebrow">Administrator</div>
-            <h2>Admin login</h2>
-            <p>Secure access for staff and moderators.</p>
+            <div class="eyebrow">User Account</div>
+            <h2>Welcome back</h2>
+            <p>Sign in to continue listening and manage your library.</p>
           </div>
-
-          <div class="social-row">
-            <button class="social-btn" type="button">SSO</button>
-            <button class="social-btn" type="button">Team access</button>
-          </div>
-
-          <div class="divider">sign in with admin credentials</div>
 
           <?php if (isset($_SESSION['error'])): ?>
             <div class="flash-message error"><?php echo $_SESSION['error']; unset($_SESSION['error']); ?></div>
@@ -77,35 +71,28 @@ session_start();
             <div class="flash-message success"><?php echo $_SESSION['success']; unset($_SESSION['success']); ?></div>
           <?php endif; ?>
 
-          <form action="../backend/admin_login.php" method="POST">
+          <form action="../backend/login.php" method="POST">
             <div class="input-group">
-              <label for="admin-email">Admin email</label>
-              <input id="admin-email" name="email" type="email" placeholder="admin@spotify.com" required />
+              <label for="email">Email address</label>
+              <input id="email" name="email" type="email" placeholder="you@example.com" required />
             </div>
 
             <div class="input-group">
-              <label for="admin-password">Password</label>
-              <input id="admin-password" name="password" type="password" placeholder="Enter admin password" required />
+              <label for="password">Password</label>
+              <input id="password" name="password" type="password" placeholder="Enter your password" required />
             </div>
 
-            <div class="inline-row">
-              <label class="check-wrap">
-                <input type="checkbox" />
-                <span>Keep me signed in</span>
-              </label>
-            </div>
-
-            <button class="primary-btn" type="submit">Access Dashboard</button>
+            <button class="primary-btn" type="submit">Log In</button>
           </form>
 
           <div class="form-foot">
-            User account? <a href="user-login.html">Login here</a>
+            Don’t have an account? <a href="user-register.php">Create one</a>
           </div>
           <div class="form-foot">
-            Need an account? <a href="../backend/create_admin.php">Register admin</a>
+            Artist? <a href="../backend/artist-register.php">Apply for artist dashboard access</a>
           </div>
           <div class="form-foot">
-            Need a user account? <a href="user-register.html">Register</a>
+            <a href="admin-login.php">Admin login</a>
           </div>
         </div>
       </div>

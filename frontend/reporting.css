@@ -146,7 +146,7 @@
 
 .reporting-shell .report-bar {
     height: 12px;
-    background: #243b35;
+    background: #29343d;
     border-radius: 3px;
     overflow: hidden;
 }
@@ -154,7 +154,7 @@
 .reporting-shell .report-bar i {
     display: block;
     height: 100%;
-    background: #75d99c;
+    background: #63d9d1;
     border-radius: 3px;
 }
 
@@ -249,8 +249,8 @@
 .reporting-shell .stat span { color: #8fa69a; font-size: .82rem; }
 .reporting-shell .panel { margin-top: 18px; }
 .reporting-shell .day { display: grid; grid-template-columns: 42px 1fr 44px; gap: 12px; align-items: center; margin: 14px 0; }
-.reporting-shell .bar { height: 12px; background: #243b35; border-radius: 3px; overflow: hidden; }
-.reporting-shell .bar i { display: block; height: 100%; background: #75d99c; border-radius: 3px; }
+.reporting-shell .bar { height: 12px; background: #29343d; border-radius: 3px; overflow: hidden; }
+.reporting-shell .bar i { display: block; height: 100%; background: #63d9d1; border-radius: 3px; }
 .reporting-shell .callouts { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
 .reporting-shell .song { display: grid; grid-template-columns: 36px 1fr auto; gap: 14px; padding: 13px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
 .reporting-shell .device { display: grid; grid-template-columns: 90px 1fr 48px; gap: 12px; align-items: center; margin: 14px 0; }
@@ -275,10 +275,10 @@
 .reporting-shell.queue-page-shell .queue-track { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .reporting-shell.queue-page-shell .queue-track strong, .reporting-shell.queue-page-shell .queue-track span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .reporting-shell.queue-page-shell .queue-track span { color: var(--text-muted); font-size: .88rem; margin-top: 4px; }
-.reporting-shell.queue-page-shell .queue-number { color: var(--spotify-green); font-weight: 800; text-align: center; }
+.reporting-shell.queue-page-shell .queue-number { color: var(--accent); font-weight: 800; text-align: center; }
 .reporting-shell.queue-page-shell .queue-actions { display: flex; gap: 6px; }
 .reporting-shell.queue-page-shell .queue-button { border: 1px solid var(--border); background: rgba(255,255,255,.06); color: var(--text-white); border-radius: 8px; padding: 8px 10px; cursor: pointer; }
-.reporting-shell.queue-page-shell .queue-button:hover { border-color: var(--spotify-green); color: var(--spotify-green); }
+.reporting-shell.queue-page-shell .queue-button:hover { border-color: var(--accent); color: var(--accent); }
 .reporting-shell.queue-page-shell .empty-queue { padding: 44px 24px; text-align: center; background: rgba(255,255,255,.035); border: 1px dashed var(--border); border-radius: 14px; }
 
 @media (max-width: 760px) {
