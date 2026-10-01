@@ -3,15 +3,32 @@ require_once __DIR__ . '/functions.php';
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 
+$isAjaxAction = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'dashboard-action';
+if ($isAjaxAction && empty($_SESSION['user_id'])) {
+    http_response_code(401);
+    header('Content-Type: application/json; charset=utf-8');
+    echo json_encode(['ok' => false, 'error' => 'session_expired']);
+    exit;
+}
+
 $userId = requireUser();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     exit('Method not allowed.');
 }
-verifyCsrf($_POST['csrf_token'] ?? null);
+if ($isAjaxAction) {
+    $submittedToken = $_POST['csrf_token'] ?? '';
+    if (!$submittedToken || !hash_equals($_SESSION['csrf_token'] ?? '', $submittedToken)) {
+        http_response_code(419);
+        header('Content-Type: application/json; charset=utf-8');
+        echo json_encode(['ok' => false, 'error' => 'csrf_expired']);
+        exit;
+    }
+} else {
+    verifyCsrf($_POST['csrf_token'] ?? null);
+}
 
 $action = $_POST['action'] ?? '';
-$isAjaxAction = ($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'dashboard-action';
 $trackId = filter_input(INPUT_POST, 'track_id', FILTER_VALIDATE_INT) ?: 0;
 $artistId = filter_input(INPUT_POST, 'artist_id', FILTER_VALIDATE_INT) ?: 0;
 $playlistId = filter_input(INPUT_POST, 'playlist_id', FILTER_VALIDATE_INT) ?: 0;
@@ -272,6 +289,7 @@ try {
     if ($pdo->inTransaction()) {
         $pdo->rollBack();
     }
+    error_log('API action failed (' . $action . '): ' . $exception->getMessage());
     $actionSucceeded = false;
     flash('error', 'The requested action could not be completed.');
 }

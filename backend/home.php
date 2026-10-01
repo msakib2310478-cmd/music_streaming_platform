@@ -662,16 +662,24 @@ unset($_SESSION['success'], $_SESSION['error']);
 
         const loadDashboardView = async (url, pushState = true) => {
             const requestId = ++dashboardRequest;
+            const destination = new URL(url, window.location.href);
+            const isTrackPage = destination.pathname.endsWith('/track.php');
             dashboardView.classList.add('is-loading');
 
             try {
-                const response = await fetch(url, {
+                const response = await fetch(destination.href, {
                     cache: 'no-store',
                     headers: { 'X-Requested-With': 'dashboard-view' }
                 });
                 const documentView = new DOMParser().parseFromString(await response.text(), 'text/html');
                 const nextView = documentView.querySelector('#dashboard-view, .main-content.page, main');
-                if (!nextView) throw new Error('Dashboard view is unavailable.');
+                if (!nextView) {
+                    if (isTrackPage) {
+                        window.location.assign(destination.href);
+                        return;
+                    }
+                    throw new Error('Dashboard view is unavailable.');
+                }
                 if (requestId !== dashboardRequest) return;
 
                 const reportClass = ['charts', 'analytics', 'artist', 'queue-page'].find(className => nextView.classList.contains(className));
@@ -687,6 +695,10 @@ unset($_SESSION['success'], $_SESSION['error']);
                 enhancePlaylistActions();
                 updateTransportState();
             } catch (error) {
+                if (isTrackPage) {
+                    window.location.assign(destination.href);
+                    return;
+                }
                 dashboardView.innerHTML = '<div class="alert error">Unable to load this section. Please try again.</div>';
             } finally {
                 dashboardView.classList.remove('is-loading');
@@ -1011,12 +1023,21 @@ unset($_SESSION['success'], $_SESSION['error']);
             const button = form.querySelector('button');
             if (button) button.disabled = true;
             try {
-                const response = await fetch(form.action, {
+                const actionUrl = form.getAttribute('action') || window.location.href;
+                const response = await fetch(new URL(actionUrl, window.location.href), {
                     method: 'POST',
                     body: new FormData(form),
                     credentials: 'same-origin',
                     headers: { 'X-Requested-With': 'dashboard-action' }
                 });
+                if (response.status === 401 || response.redirected) {
+                    showToast('Your session expired. Sign in again.');
+                    return;
+                }
+                if (response.status === 419) {
+                    showToast('This page expired. Refresh and try again.');
+                    return;
+                }
                 const result = await response.json().catch(() => ({ ok: false }));
                 if (!response.ok || !result.ok) throw new Error('Action failed.');
 
