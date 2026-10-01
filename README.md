@@ -145,7 +145,7 @@ php backend/validate_setup.php
 Expected validator output:
 
 ```text
-Database setup is valid: 17 required tables, 4 reporting views, and all required columns found.
+Database setup is valid: 19 required tables, 4 reporting views, and all required columns found.
 ```
 
 The SQL file is imported only when the database volume is created. To destroy the local database and recreate it from the SQL file:
@@ -183,6 +183,7 @@ The PHP server must be started with the repository root as its document root. Th
 | Variable | Default | Description |
 | --- | --- | --- |
 | `MUSIC_DB_HOST` | `127.0.0.1` | MySQL hostname or IP address |
+| `MUSIC_DB_PORT` | `3306` | MySQL TCP port; set this to the MySQL port shown in XAMPP if it differs |
 | `MUSIC_DB_NAME` | `music_streaming_db` | Database name |
 | `MUSIC_DB_USER` | `music_app` | Database user |
 | `MUSIC_DB_PASS` | `music_app_local` | Database password |

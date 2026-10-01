@@ -1,12 +1,13 @@
 <?php
 $host = getenv('MUSIC_DB_HOST') ?: '127.0.0.1';
+$port = getenv('MUSIC_DB_PORT') ?: '3306';
 $dbName = getenv('MUSIC_DB_NAME') ?: 'music_streaming_db';
 $dbUser = getenv('MUSIC_DB_USER') ?: 'music_app';
 $dbPass = getenv('MUSIC_DB_PASS') ?: 'music_app_local';
 
 try {
     $pdo = new PDO(
-        "mysql:host={$host};dbname={$dbName};charset=utf8mb4",
+        "mysql:host={$host};port={$port};dbname={$dbName};charset=utf8mb4",
         $dbUser,
         $dbPass,
         [
