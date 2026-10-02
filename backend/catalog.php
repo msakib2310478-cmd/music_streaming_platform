@@ -4,6 +4,14 @@ require_once __DIR__ . '/functions.php';
 $userId = requireUser();
 $type = $_GET['type'] ?? 'track';
 $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
+$isEmbeddedCatalog = defined('DASHBOARD_EMBED_CATALOG') && DASHBOARD_EMBED_CATALOG;
+
+if (!$isEmbeddedCatalog) {
+    $routes = ['track' => 'track', 'artist' => 'artist', 'album' => 'album'];
+    $view = $routes[$type] ?? 'artist';
+    header('Location: user-dashbord.php?view=' . $view . '&id=' . $id);
+    exit;
+}
 
 if ($type === 'track') {
     $stmt = $pdo->prepare(
@@ -67,6 +75,16 @@ if ($type === 'track') {
         $tracksStmt->execute(['id' => $id]);
     }
     $tracks = $tracksStmt->fetchAll();
+    $albumPlaybackTracks = array_map(static function (array $track): array {
+        return [
+            'trackId' => (int) $track['track_id'],
+            'audioUrl' => (string) ($track['audio_url'] ?? ''),
+            'title' => (string) $track['title'],
+            'artist' => (string) ($track['artist_names'] ?? $track['artist_name']),
+            'artistId' => (int) $track['artist_id'],
+            'coverImage' => coverImageUrl($track['cover_image'] ?: $track['album_cover']),
+        ];
+    }, array_values(array_filter($tracks, static fn (array $track): bool => !empty($track['audio_url']))));
     $title = $item['title'];
 } else {
     $stmt = $pdo->prepare('SELECT ar.*, COUNT(DISTINCT af.user_id) followers FROM artists ar LEFT JOIN artist_follows af ON af.artist_id = ar.artist_id WHERE ar.artist_id = :id GROUP BY ar.artist_id');
@@ -103,6 +121,7 @@ if ($type === 'track') {
     $title = $item['artist_name'];
 }
 ?>
+<?php if (!$isEmbeddedCatalog): ?>
 <!doctype html>
 <html lang="en">
 <head>
@@ -123,7 +142,6 @@ if ($type === 'track') {
         .rating { color: #ffd166; }
         .genres { display: flex; gap: 8px; flex-wrap: wrap; }
         .genres a { color: var(--text-muted); border: 1px solid var(--border); border-radius: 20px; padding: 6px 10px; }
-        .track-audio { display: block; width: min(520px, 100%); margin: 18px 0; }
         .top-nav { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; gap: 18px; padding: 0 0 8px; background: rgba(18,18,18,.92); border-bottom: 1px solid rgba(255,255,255,.06); }
         .top-search { flex: 1; max-width: 720px; }
         .search-shell { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-radius: 999px; background: rgba(255,255,255,.08); }
@@ -154,15 +172,18 @@ if ($type === 'track') {
     <div class="user-actions"><a class="premium-btn" href="subscriptions.php">CampusBeatz Plus</a><button class="user-icon-btn" type="button" aria-label="Account">&#9679;</button></div>
 </header>
 <main class="main-content page">
+<?php else: ?>
+<div class="catalog-view">
+<?php endif; ?>
     <p><a href="user-dashbord.php" data-dashboard-link>&larr; Home</a></p>
     <?php if ($type === 'track'): ?>
         <section class="panel hero">
             <img src="<?php echo e($item['cover_image'] ?: $item['album_cover']); ?>" alt="">
             <div>
                 <h1 data-artist-id="<?php echo (int) $item['artist_id']; ?>"><?php echo e($item['title']); ?></h1>
-                <p class="muted"><?php echo e($item['artist_names'] ?: $item['artist_name']); ?> · <a href="album.php?id=<?php echo (int) $item['album_id']; ?>"><?php echo e($item['album_title']); ?></a></p>
-                <p class="genres"><?php foreach ($genres as $genre): ?><a href="genre.php?id=<?php echo (int) $genre['genre_id']; ?>"><?php echo e($genre['genre_name']); ?></a><?php endforeach; ?></p>
-                <?php if (!empty($item['audio_url'])): ?><audio class="track-audio" controls preload="metadata" src="<?php echo e($item['audio_url']); ?>" aria-label="Play <?php echo e($item['title']); ?>"></audio><?php else: ?><p class="muted">Audio is not available for this track.</p><?php endif; ?>
+                <p class="muted"><?php echo e($item['artist_names'] ?: $item['artist_name']); ?> · <a href="album.php?id=<?php echo (int) $item['album_id']; ?>" data-dashboard-link><?php echo e($item['album_title']); ?></a></p>
+                <p class="genres"><?php foreach ($genres as $genre): ?><a href="genre.php?id=<?php echo (int) $genre['genre_id']; ?>" data-dashboard-link><?php echo e($genre['genre_name']); ?></a><?php endforeach; ?></p>
+                <?php if (!empty($item['audio_url'])): ?><button class="button play-track" type="button" data-track-id="<?php echo $id; ?>" data-audio-url="<?php echo e($item['audio_url']); ?>" data-title="<?php echo e($item['title']); ?>" data-artist="<?php echo e($item['artist_names'] ?: $item['artist_name']); ?>" data-artist-id="<?php echo (int) $item['artist_id']; ?>" data-cover-image="<?php echo e($item['cover_image'] ?: $item['album_cover']); ?>"><i class="fas fa-play"></i> Play</button><?php else: ?><p class="muted">Audio is not available for this track.</p><?php endif; ?>
                 <form class="inline" method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="favorite"><input type="hidden" name="track_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="track.php?id=<?php echo $id; ?>"><button class="button" type="submit"><?php echo $isFavorite ? 'Remove Favorite' : 'Add Favorite'; ?></button></form>
                 <form class="inline" method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="queue_add"><input type="hidden" name="track_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="track.php?id=<?php echo $id; ?>"><button class="button" type="submit">Add to Up Next</button></form>
                 <span class="rating"> ★ <?php echo $rating['average_rating'] ? number_format((float) $rating['average_rating'], 1) : 'No ratings'; ?> (<?php echo (int) $rating['rating_count']; ?>)</span>
@@ -170,14 +191,18 @@ if ($type === 'track') {
         </section>
         <section class="panel"><h2>Rate this track</h2><form method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="rate"><input type="hidden" name="track_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="track.php?id=<?php echo $id; ?>"><select name="rating" required><option value="">Choose rating</option><?php for ($i = 1; $i <= 5; $i++): ?><option value="<?php echo $i; ?>" <?php echo (int) $rating['user_rating'] === $i ? 'selected' : ''; ?>><?php echo $i; ?> star<?php echo $i === 1 ? '' : 's'; ?></option><?php endfor; ?></select><button class="button" type="submit">Save rating</button></form><?php if (!empty($item['lyrics'])): ?><h2>Lyrics</h2><p><?php echo nl2br(e($item['lyrics'])); ?></p><?php endif; ?></section>
     <?php elseif ($type === 'album'): ?>
-        <section class="panel hero"><img src="<?php echo e($item['cover_image']); ?>" alt=""><div><h1><?php echo e($item['title']); ?></h1><p class="muted"><?php echo e($item['artist_name']); ?> · <?php echo e($item['release_date']); ?></p><p><?php echo e($item['description']); ?></p></div></section>
-        <section class="panel"><h2>Tracks</h2><?php foreach ($tracks as $track): ?><div class="row"><a href="track.php?id=<?php echo (int) $track['track_id']; ?>"><?php echo (int) $track['track_number']; ?>. <?php echo e($track['title']); ?></a><span class="muted"><?php echo (int) $track['duration_seconds']; ?> sec</span></div><?php endforeach; ?></section>
+        <section class="panel hero"><img src="<?php echo e($item['cover_image']); ?>" alt=""><div><h1><?php echo e($item['title']); ?></h1><p class="muted"><?php echo e($item['artist_name']); ?> · <?php echo e($item['release_date']); ?></p><p><?php echo e($item['description']); ?></p><?php if ($albumPlaybackTracks): ?><button class="button play-track" type="button" data-album-tracks="<?php echo e(json_encode($albumPlaybackTracks, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT)); ?>" data-track-id="<?php echo $albumPlaybackTracks[0]['trackId']; ?>" data-audio-url="<?php echo e($albumPlaybackTracks[0]['audioUrl']); ?>" data-title="<?php echo e($albumPlaybackTracks[0]['title']); ?>" data-artist="<?php echo e($albumPlaybackTracks[0]['artist']); ?>" data-artist-id="<?php echo $albumPlaybackTracks[0]['artistId']; ?>" data-cover-image="<?php echo e($albumPlaybackTracks[0]['coverImage']); ?>"><i class="fas fa-play"></i> Play album</button><?php else: ?><p class="muted">No playable tracks are available in this album.</p><?php endif; ?></div></section>
+        <section class="panel"><h2>Tracks</h2><?php foreach ($tracks as $track): ?><div class="row"><a href="track.php?id=<?php echo (int) $track['track_id']; ?>" data-dashboard-link><?php echo (int) $track['track_number']; ?>. <?php echo e($track['title']); ?></a><span class="muted"><?php echo (int) $track['duration_seconds']; ?> sec</span></div><?php endforeach; ?></section>
     <?php else: ?>
         <section class="panel hero"><img src="<?php echo e($item['profile_image']); ?>" alt=""><div><h1><?php echo e($item['artist_name']); ?></h1><p class="muted"><?php echo e($item['country']); ?> · <?php echo (int) $item['followers']; ?> followers</p><p><?php echo e($item['bio']); ?></p><form method="post" action="api.php"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="follow"><input type="hidden" name="artist_id" value="<?php echo $id; ?>"><input type="hidden" name="redirect" value="artist.php?id=<?php echo $id; ?>"><button class="button" type="submit"><?php echo $isFollowing ? 'Following' : 'Follow'; ?></button></form><?php if ((int) ($_SESSION['artist_id'] ?? 0) === (int) $id): ?><p><a class="button" href="artist-dashboard.php">Open Artist Dashboard</a></p><?php endif; ?></div></section>
-        <section class="panel"><h2>Popular tracks</h2><?php foreach ($tracks as $track): ?><div class="row"><a href="track.php?id=<?php echo (int) $track['track_id']; ?>"><?php echo e($track['title']); ?></a><span class="muted"><?php echo (int) $track['duration_seconds']; ?> sec</span></div><?php endforeach; ?></section>
-        <section class="panel"><h2>Albums</h2><?php foreach ($albums as $album): ?><div class="row"><a href="album.php?id=<?php echo (int) $album['album_id']; ?>"><?php echo e($album['title']); ?></a><span class="muted"><?php echo e($album['release_date']); ?></span></div><?php endforeach; ?></section>
+        <section class="panel"><h2>Popular tracks</h2><?php foreach ($tracks as $track): ?><div class="row"><a href="track.php?id=<?php echo (int) $track['track_id']; ?>" data-dashboard-link><?php echo e($track['title']); ?></a><span class="muted"><?php echo (int) $track['duration_seconds']; ?> sec</span></div><?php endforeach; ?></section>
+        <section class="panel"><h2>Albums</h2><?php foreach ($albums as $album): ?><div class="row"><a href="album.php?id=<?php echo (int) $album['album_id']; ?>" data-dashboard-link><?php echo e($album['title']); ?></a><span class="muted"><?php echo e($album['release_date']); ?></span></div><?php endforeach; ?></section>
     <?php endif; ?>
+<?php if (!$isEmbeddedCatalog): ?>
 </main>
 <script>document.querySelectorAll('.nav-arrow-btn').forEach(button => button.addEventListener('click', () => button.dataset.nav === 'back' ? history.back() : history.forward()));</script>
 </body>
 </html>
+<?php else: ?>
+</div>
+<?php endif; ?>

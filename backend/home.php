@@ -3,6 +3,11 @@ require_once __DIR__ . '/functions.php';
 header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
 header('Pragma: no-cache');
 $userId = requireUser();
+$catalogView = $_GET['view'] ?? '';
+if (!in_array($catalogView, ['track', 'artist', 'album'], true)) {
+    $catalogView = '';
+}
+$catalogId = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
 
 $queries = [
     'weekly' => "SELECT t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name, COUNT(sh.stream_id) AS metric FROM stream_history sh JOIN tracks t ON t.track_id = sh.track_id JOIN albums al ON al.album_id = t.album_id JOIN artists ar ON ar.artist_id = al.artist_id WHERE sh.played_at >= CURRENT_TIMESTAMP - INTERVAL 7 DAY GROUP BY t.track_id, t.title, t.audio_url, t.cover_image, ar.artist_name ORDER BY metric DESC, t.title LIMIT 10",
@@ -90,7 +95,7 @@ unset($_SESSION['success'], $_SESSION['error']);
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CampusBeatz Dashboard</title>
-    <link rel="stylesheet" href="../frontend/user-dashbord.css?v=20260925">
+    <link rel="stylesheet" href="../frontend/user-dashbord.css?v=20261002-album-queue">
     <link rel="stylesheet" href="../frontend/reporting.css?v=20260925">
     <link rel="stylesheet" href="../frontend/profile.css?v=20260930">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
@@ -368,6 +373,14 @@ unset($_SESSION['success'], $_SESSION['error']);
             </header>
 
             <div id="dashboard-view">
+                <?php if ($catalogView !== ''): ?>
+                    <?php
+                    $_GET['type'] = $catalogView;
+                    $_GET['id'] = (string) $catalogId;
+                    define('DASHBOARD_EMBED_CATALOG', true);
+                    require __DIR__ . '/catalog.php';
+                    ?>
+                <?php else: ?>
                 <?php if ($featuredTrack): ?>
                     <section class="hero-banner" style="--hero-image: url('<?php echo e($featuredTrack['cover_image']); ?>');">
                         <div class="hero-copy">
@@ -482,6 +495,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <?php endforeach; ?>
                 </div>
             </section>
+                <?php endif; ?>
             </div>
         </main>
     </div>
@@ -552,6 +566,8 @@ unset($_SESSION['success'], $_SESSION['error']);
         let currentTrack = 0;
         let streamSent = false;
         let currentPlayButton = null;
+        let currentPlaybackQueue = null;
+        let currentPlaybackQueueIndex = -1;
         let shuffleEnabled = false;
         let repeatEnabled = false;
         let toastTimer = null;
@@ -627,6 +643,18 @@ unset($_SESSION['success'], $_SESSION['error']);
         const updateTransportState = () => {
             const buttons = availablePlayButtons();
             const currentIndex = currentPlayButton ? buttons.indexOf(currentPlayButton) : -1;
+            if (currentPlaybackQueue) {
+                const hasNextTrack = currentPlaybackQueue.length > 1;
+                playerPreviousButton.disabled = !hasNextTrack || (currentPlaybackQueueIndex <= 0 && !repeatEnabled && !shuffleEnabled);
+                playerNextButton.disabled = !hasNextTrack || (currentPlaybackQueueIndex >= currentPlaybackQueue.length - 1 && !repeatEnabled && !shuffleEnabled);
+                playerShuffleButton.setAttribute('aria-pressed', shuffleEnabled ? 'true' : 'false');
+                playerShuffleButton.setAttribute('aria-label', shuffleEnabled ? 'Shuffle on' : 'Shuffle off');
+                playerShuffleButton.title = shuffleEnabled ? 'Shuffle on' : 'Shuffle off';
+                playerRepeatButton.setAttribute('aria-pressed', repeatEnabled ? 'true' : 'false');
+                playerRepeatButton.setAttribute('aria-label', repeatEnabled ? 'Repeat on' : 'Repeat off');
+                playerRepeatButton.title = repeatEnabled ? 'Repeat on' : 'Repeat off';
+                return;
+            }
             const hasTracks = buttons.length > 0;
             playerPreviousButton.disabled = !hasTracks || (!repeatEnabled && currentIndex <= 0);
             playerNextButton.disabled = !hasTracks || (!repeatEnabled && currentIndex === buttons.length - 1);
@@ -663,23 +691,17 @@ unset($_SESSION['success'], $_SESSION['error']);
         const loadDashboardView = async (url, pushState = true) => {
             const requestId = ++dashboardRequest;
             const destination = new URL(url, window.location.href);
-            const isTrackPage = destination.pathname.endsWith('/track.php');
             dashboardView.classList.add('is-loading');
 
             try {
                 const response = await fetch(destination.href, {
                     cache: 'no-store',
-                    headers: { 'X-Requested-With': 'dashboard-view' }
+                    credentials: 'same-origin'
                 });
+                if (!response.ok) throw new Error(`Request returned HTTP ${response.status} from ${response.url}.`);
                 const documentView = new DOMParser().parseFromString(await response.text(), 'text/html');
                 const nextView = documentView.querySelector('#dashboard-view, .main-content.page, main');
-                if (!nextView) {
-                    if (isTrackPage) {
-                        window.location.assign(destination.href);
-                        return;
-                    }
-                    throw new Error('Dashboard view is unavailable.');
-                }
+                if (!nextView) throw new Error('Dashboard view is unavailable.');
                 if (requestId !== dashboardRequest) return;
 
                 const reportClass = ['charts', 'analytics', 'artist', 'queue-page'].find(className => nextView.classList.contains(className));
@@ -695,11 +717,11 @@ unset($_SESSION['success'], $_SESSION['error']);
                 enhancePlaylistActions();
                 updateTransportState();
             } catch (error) {
-                if (isTrackPage) {
-                    window.location.assign(destination.href);
-                    return;
-                }
-                dashboardView.innerHTML = '<div class="alert error">Unable to load this section. Please try again.</div>';
+                console.error('Unable to load dashboard view:', error);
+                const alert = document.createElement('div');
+                alert.className = 'alert error';
+                alert.textContent = `Unable to load this section. ${error instanceof Error ? error.message : 'An unexpected error occurred.'}`;
+                dashboardView.replaceChildren(alert);
             } finally {
                 dashboardView.classList.remove('is-loading');
             }
@@ -714,9 +736,32 @@ unset($_SESSION['success'], $_SESSION['error']);
                 return;
             }
 
-            const link = event.target.closest('[data-dashboard-link]');
-            if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+            const link = event.target.closest('[data-dashboard-link], a[href*="track.php?id="]');
+            if (!link || link.classList.contains('play-track') || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
             event.preventDefault();
+            if (/\/(?:track|artist|album)\.php$/.test(new URL(link.href).pathname)) {
+                if (currentTrack) {
+                    try {
+                        sessionStorage.setItem(playerStateKey, JSON.stringify({
+                            trackId: currentTrack,
+                            audioUrl: audio.currentSrc || audio.src,
+                            title: document.getElementById('player-title').textContent,
+                            artist: document.getElementById('player-artist').textContent,
+                            artistId: new URL(document.getElementById('player-artist').href, window.location.href).searchParams.get('id') || '',
+                            coverImage: document.getElementById('player-cover').src,
+                            albumQueue: currentPlaybackQueue,
+                            albumQueueIndex: currentPlaybackQueueIndex,
+                            currentTime: audio.currentTime,
+                            wasPlaying: !audio.paused,
+                            volume: audio.volume,
+                        }));
+                    } catch (error) {
+                        console.error('Unable to save the player state:', error);
+                    }
+                }
+                window.location.assign(link.href);
+                return;
+            }
             loadDashboardView(link.href);
         });
 
@@ -817,7 +862,7 @@ unset($_SESSION['success'], $_SESSION['error']);
             return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0');
         };
 
-        const playTrack = button => {
+        const startTrack = button => {
             if (!button.dataset.audioUrl) {
                 alert('This demo track has no audio file yet.');
                 return;
@@ -834,6 +879,8 @@ unset($_SESSION['success'], $_SESSION['error']);
             playerTitle.textContent = button.dataset.title;
             playerTitle.href = `track.php?id=${encodeURIComponent(currentTrack)}`;
             playerArtist.textContent = button.dataset.artist;
+            const playerCover = document.getElementById('player-cover');
+            if (button.dataset.coverImage) playerCover.src = button.dataset.coverImage;
             if (button.dataset.artistId) {
                 playerArtist.href = `artist.php?id=${encodeURIComponent(button.dataset.artistId)}`;
             } else {
@@ -843,42 +890,79 @@ unset($_SESSION['success'], $_SESSION['error']);
             updateTransportState();
         };
 
+        const playTrack = button => {
+            if (button.dataset.albumTracks) {
+                try {
+                    const albumTracks = JSON.parse(button.dataset.albumTracks);
+                    if (!Array.isArray(albumTracks) || !albumTracks.length) {
+                        throw new Error('The album has no playable tracks.');
+                    }
+                    currentPlaybackQueue = albumTracks;
+                    currentPlaybackQueueIndex = 0;
+                    startTrack({ dataset: currentPlaybackQueue[0] });
+                } catch (error) {
+                    console.error('Unable to play album tracks:', error);
+                    showToast('Unable to play this album.');
+                }
+                return;
+            }
+
+            if (button.dataset.queueIndex !== undefined && currentPlaybackQueue) {
+                currentPlaybackQueueIndex = Number(button.dataset.queueIndex);
+            } else {
+                currentPlaybackQueue = null;
+                currentPlaybackQueueIndex = -1;
+            }
+            startTrack(button);
+        };
+
+        const playerStateKey = 'campusbeatz-player-state';
+        const restorePlayerState = () => {
+            let savedState;
+            try {
+                const savedPlayer = sessionStorage.getItem(playerStateKey);
+                if (!savedPlayer) return;
+                savedState = JSON.parse(savedPlayer);
+            } catch (error) {
+                console.error('Unable to restore the player state:', error);
+                return;
+            }
+
+            if (!savedState || !savedState.trackId || !savedState.audioUrl || !savedState.title) return;
+            const restorePosition = () => {
+                if (Number.isFinite(savedState.currentTime) && savedState.currentTime < audio.duration) {
+                    audio.currentTime = savedState.currentTime;
+                }
+            };
+            audio.addEventListener('loadedmetadata', restorePosition, { once: true });
+            if (volume && Number.isFinite(savedState.volume)) {
+                volume.value = String(savedState.volume * 100);
+                audio.volume = savedState.volume;
+            }
+            if (Array.isArray(savedState.albumQueue) && savedState.albumQueue.length) {
+                currentPlaybackQueue = savedState.albumQueue;
+                currentPlaybackQueueIndex = Number(savedState.albumQueueIndex) || 0;
+            }
+            playTrack({
+                dataset: {
+                    trackId: String(savedState.trackId),
+                    audioUrl: savedState.audioUrl,
+                    title: savedState.title,
+                    artist: savedState.artist || '',
+                    artistId: savedState.artistId || '',
+                    coverImage: savedState.coverImage || '',
+                    ...(currentPlaybackQueue ? { queueIndex: String(currentPlaybackQueueIndex) } : {}),
+                },
+            });
+            if (!savedState.wasPlaying) audio.pause();
+        };
+        restorePlayerState();
+
         document.addEventListener('click', event => {
             const playButton = event.target.closest('.play-track');
             if (!playButton) return;
             event.preventDefault();
             playTrack(playButton);
-        });
-
-        document.addEventListener('click', async event => {
-            const trackLink = event.target.closest('a[href*="track.php?id="]');
-            if (!trackLink || !dashboardView.contains(trackLink) || trackLink.classList.contains('play-track')) return;
-
-            event.preventDefault();
-            try {
-                const response = await fetch(trackLink.href, { cache: 'no-store', credentials: 'same-origin' });
-                if (!response.ok) throw new Error('Track details could not be loaded.');
-                const trackPage = new DOMParser().parseFromString(await response.text(), 'text/html');
-                const audioSource = trackPage.querySelector('audio.track-audio')?.getAttribute('src');
-                const trackHeading = trackPage.querySelector('.hero h1');
-                const title = trackHeading?.textContent.trim();
-                const artistLine = trackPage.querySelector('.hero .muted')?.textContent.trim() || '';
-                const artist = artistLine.split('·')[0].trim();
-                const trackId = new URL(trackLink.href).searchParams.get('id');
-                if (!audioSource || !title) throw new Error('Track audio is unavailable.');
-
-                playTrack({
-                    dataset: {
-                        trackId,
-                        audioUrl: new URL(audioSource, response.url || trackLink.href).href,
-                        title,
-                        artist,
-                        artistId: trackHeading.dataset.artistId,
-                    },
-                });
-            } catch (error) {
-                console.error('Unable to play selected track:', error);
-            }
         });
 
         document.querySelectorAll('.nav-arrow-btn').forEach(button => {
@@ -959,6 +1043,23 @@ unset($_SESSION['success'], $_SESSION['error']);
         });
 
         const playAdjacentTrack = direction => {
+            if (currentPlaybackQueue) {
+                let queueIndex = currentPlaybackQueueIndex + direction;
+                if (shuffleEnabled) {
+                    const choices = currentPlaybackQueue
+                        .map((track, index) => index)
+                        .filter(index => index !== currentPlaybackQueueIndex);
+                    queueIndex = choices[Math.floor(Math.random() * choices.length)] ?? currentPlaybackQueueIndex;
+                } else if (repeatEnabled) {
+                    queueIndex = (queueIndex + currentPlaybackQueue.length) % currentPlaybackQueue.length;
+                } else if (queueIndex < 0 || queueIndex >= currentPlaybackQueue.length) {
+                    return;
+                }
+                currentPlaybackQueueIndex = queueIndex;
+                startTrack({ dataset: currentPlaybackQueue[queueIndex] });
+                return;
+            }
+
             const buttons = availablePlayButtons();
             if (!buttons.length) {
                 showToast('No playable tracks are available yet.');
