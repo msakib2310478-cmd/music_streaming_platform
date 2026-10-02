@@ -108,7 +108,7 @@ if ($type === 'track') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?php echo e($title); ?> - FulseFLow</title>
+    <title><?php echo e($title); ?> - CampusBeatz</title>
     <link rel="stylesheet" href="../frontend/user-dashbord.css">
     <style>
         body { min-width: 1100px; overflow-x: auto; }
@@ -151,7 +151,7 @@ if ($type === 'track') {
             <button type="submit" aria-label="Search">Search</button>
         </div>
     </form>
-    <div class="user-actions"><a class="premium-btn" href="subscriptions.php">FulseFLow Plus</a><button class="user-icon-btn" type="button" aria-label="Account">&#9679;</button></div>
+    <div class="user-actions"><a class="premium-btn" href="subscriptions.php">CampusBeatz Plus</a><button class="user-icon-btn" type="button" aria-label="Account">&#9679;</button></div>
 </header>
 <main class="main-content page">
     <p><a href="user-dashbord.php" data-dashboard-link>&larr; Home</a></p>

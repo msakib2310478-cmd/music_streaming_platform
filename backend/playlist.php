@@ -525,7 +525,7 @@ $allTracks = $canEdit
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-music"></i>
-                <span>FulseFLow</span>
+                <span>CampusBeatz</span>
             </div>
 
             <nav class="nav-links">
@@ -589,7 +589,7 @@ $allTracks = $canEdit
                 </form>
 
                 <div class="user-actions">
-                    <a class="premium-btn" href="subscriptions.php">FulseFLow Plus</a>
+                    <a class="premium-btn" href="subscriptions.php">CampusBeatz Plus</a>
 
                     <div class="user-menu-wrap">
                         <button class="user-icon-btn" type="button" aria-label="Account information">

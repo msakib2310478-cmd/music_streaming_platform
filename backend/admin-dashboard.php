@@ -25,7 +25,7 @@ unset($_SESSION['success'], $_SESSION['error']);
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>FulseFLow Admin Dashboard</title>
+  <title>CampusBeatz Admin Dashboard</title>
   <style>
     :root {
       --bg: #0e141c;
@@ -296,7 +296,7 @@ unset($_SESSION['success'], $_SESSION['error']);
     <aside class="sidebar">
       <div class="brand">
         <span class="brand-dot">♫</span>
-        <span>FulseFLow</span>
+        <span>CampusBeatz</span>
       </div>
 
       <nav class="nav">

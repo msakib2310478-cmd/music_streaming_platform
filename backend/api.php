@@ -202,7 +202,7 @@ try {
         $pdo->commit();
         $_SESSION['subscription_type'] = $plan;
         flash('success', $plan === 'premium' ? 'Premium plan activated.' : 'Premium plan cancelled.');
-        addNotification($pdo, $userId, 'subscription', $plan === 'premium' ? 'FulseFLow Plus is now active.' : 'Your FulseFLow Plus plan was cancelled.', 'subscriptions.php');
+        addNotification($pdo, $userId, 'subscription', $plan === 'premium' ? 'CampusBeatz Plus is now active.' : 'Your CampusBeatz Plus plan was cancelled.', 'subscriptions.php');
     } elseif ($action === 'create_playlist') {
         $name = trim($_POST['playlist_name'] ?? '');
         if ($name === '' || strlen($name) > 100) {

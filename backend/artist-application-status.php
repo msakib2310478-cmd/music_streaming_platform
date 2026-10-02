@@ -14,7 +14,7 @@ $artistName = $application['artist_name'] ?? '';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Artist application status - FulseFLow</title>
+    <title>Artist application status - CampusBeatz</title>
     <link rel="stylesheet" href="../frontend/user-dashbord.css">
     <style>
         body { min-height: 100vh; display: grid; place-items: center; padding: 24px; background: #101114; color: #f4f5f7; }

@@ -413,7 +413,7 @@ if ($query !== '') {
         </form>
 
         <div class="user-actions">
-            <a class="premium-btn" href="subscriptions.php">FulseFLow Plus</a>
+            <a class="premium-btn" href="subscriptions.php">CampusBeatz Plus</a>
 
             <div class="user-menu-wrap">
                 <button class="user-icon-btn" type="button" aria-label="Account information">

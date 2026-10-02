@@ -9,7 +9,7 @@ requireRole('user', '../frontend/user-login.php');
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FulseFLow Dashboard</title>
+    <title>CampusBeatz Dashboard</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -456,7 +456,7 @@ requireRole('user', '../frontend/user-login.php');
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-music"></i>
-                <span>FulseFLow</span>
+                <span>CampusBeatz</span>
             </div>
 
             <nav class="nav-links">
@@ -503,7 +503,7 @@ requireRole('user', '../frontend/user-login.php');
                 </div>
 
                 <div class="user-actions">
-                    <button class="premium-btn">FulseFLow Plus</button>
+                    <button class="premium-btn">CampusBeatz Plus</button>
                     <button class="user-icon" aria-label="User profile"><i class="fas fa-user"></i></button>
                 </div>
             </header>

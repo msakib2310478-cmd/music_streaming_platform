@@ -1,6 +1,6 @@
-# FulseFLow Music Streaming Platform
+# CampusBeatz Music Streaming Platform
 
-FulseFLow is a PHP and MySQL music streaming application. It provides user authentication, music discovery, playback tracking, playlists, favorites, ratings, artist follows, recommendations, subscriptions, and an administrator dashboard.
+CampusBeatz is a PHP and MySQL music streaming application. It provides user authentication, music discovery, playback tracking, playlists, favorites, ratings, artist follows, recommendations, subscriptions, and an administrator dashboard.
 
 The project is intended for local development and demonstration. Docker supplies the MySQL database, while PHP's built-in development server serves the application.
 
@@ -36,7 +36,7 @@ The project is intended for local development and demonstration. Docker supplies
 - Artist follow/unfollow
 - Playlist creation, renaming, visibility changes, track management, and ordering
 - Recently played tracks
-- FulseFLow-style Up Next queue with add, remove, reorder, and clear actions
+- CampusBeatz-style Up Next queue with add, remove, reorder, and clear actions
 - Collaborative playlists with owner-managed invitations and collaborator track editing
 - Multiple credited artists per track, including featured performers
 - Genre-based recommendations

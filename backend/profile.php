@@ -23,7 +23,7 @@ unset($_SESSION['success'], $_SESSION['error']);
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>My Profile - FulseFLow</title>
+    <title>My Profile - CampusBeatz</title>
     <link rel="stylesheet" href="../frontend/user-dashbord.css">
     <link rel="stylesheet" href="../frontend/profile.css">
 </head>

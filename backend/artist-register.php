@@ -62,7 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Artist account application - FulseFLow</title>
+    <title>Artist account application - CampusBeatz</title>
     <link rel="stylesheet" href="../frontend/auth-style.css">
     <style>
         .artist-application { max-width: 560px; margin: 7vh auto; padding: 32px; background: #171b22; border: 1px solid rgba(255,255,255,.1); border-radius: 12px; color: #edf2f7; }

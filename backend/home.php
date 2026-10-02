@@ -89,7 +89,7 @@ unset($_SESSION['success'], $_SESSION['error']);
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FulseFLow Dashboard</title>
+    <title>CampusBeatz Dashboard</title>
     <link rel="stylesheet" href="../frontend/user-dashbord.css?v=20260925">
     <link rel="stylesheet" href="../frontend/reporting.css?v=20260925">
     <link rel="stylesheet" href="../frontend/profile.css?v=20260930">
@@ -270,7 +270,7 @@ unset($_SESSION['success'], $_SESSION['error']);
         <aside class="sidebar">
             <div class="logo">
                 <i class="fas fa-music"></i>
-                <span>FulseFLow</span>
+                <span>CampusBeatz</span>
             </div>
 
             <div class="sidebar-profile">
@@ -283,7 +283,7 @@ unset($_SESSION['success'], $_SESSION['error']);
             </div>
 
             <div class="sidebar-premium">
-                <strong>FulseFLow Plus</strong>
+                <strong>CampusBeatz Plus</strong>
                 <span>Unlock richer listening insights and a more personal mix.</span>
                 <a href="subscriptions.php">Upgrade</a>
             </div>
@@ -343,7 +343,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                         <button class="top-notification" type="button" aria-label="Notifications" title="Notifications" data-notifications><i class="fas fa-bell"></i><?php if ($notificationCount): ?><span class="notification-count"><?php echo $notificationCount > 9 ? '9+' : $notificationCount; ?></span><?php endif; ?></button>
                         <div class="notification-popover" data-notification-popover><h3>Notifications</h3><div data-notification-list><div class="notification-empty">Loading notifications...</div></div></div>
                     </div>
-                    <a class="badge-btn premium-btn" href="subscriptions.php">FulseFLow Plus</a>
+                    <a class="badge-btn premium-btn" href="subscriptions.php">CampusBeatz Plus</a>
                     <div class="user-menu-wrap">
                         <button class="user-icon-btn" type="button" aria-label="Account information">
                             <i class="fas fa-user"></i>

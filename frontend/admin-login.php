@@ -6,7 +6,7 @@ session_start();
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FulseFLow | Admin Login</title>
+    <title>CampusBeatz | Admin Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
@@ -37,7 +37,7 @@ session_start();
       <div class="auth-visual">
         <div class="brand">
           <span class="brand-logo"><i class="fa-brands fa-music"></i></span>
-          <span>FulseFLow</span>
+          <span>CampusBeatz</span>
         </div>
 
         <div class="visual-copy">
@@ -74,7 +74,7 @@ session_start();
           <form action="../backend/admin_login.php" method="POST">
             <div class="input-group">
               <label for="admin-email">Admin email</label>
-              <input id="admin-email" name="email" type="email" placeholder="admin@fulseflow.com" required />
+              <input id="admin-email" name="email" type="email" placeholder="admin@CampusBeatz.com" required />
             </div>
 
             <div class="input-group">
