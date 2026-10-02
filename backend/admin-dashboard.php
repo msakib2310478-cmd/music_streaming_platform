@@ -562,7 +562,7 @@ unset($_SESSION['success'], $_SESSION['error']);
           </div>
           <div class="field">
             <label>Audio file</label>
-            <input type="file" name="audio_file" accept="audio/mpeg,audio/mp3,audio/wav,audio/ogg,audio/mp4" required>
+            <input type="file" name="audio_file" accept="audio/*,.mp3,.mpeg,.wav,.ogg,.m4a,.mp4" required>
           </div>
           <div class="field" style="justify-content:end;">
             <button class="btn primary" type="submit">Add Track</button>
@@ -595,7 +595,7 @@ unset($_SESSION['success'], $_SESSION['error']);
                     <input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>">
                     <input type="hidden" name="action" value="replace_track_audio">
                     <input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>">
-                    <input type="file" name="audio_file" accept="audio/mpeg,audio/mp3" required>
+                    <input type="file" name="audio_file" accept="audio/*,.mp3,.mpeg,.wav,.ogg,.m4a,.mp4" required>
                     <button class="btn primary" type="submit">Replace Audio</button>
                   </form>
                   <form action="../backend/admin_actions.php" method="POST" onsubmit="return confirm('Delete this track?');"><input type="hidden" name="csrf_token" value="<?php echo e(csrfToken()); ?>"><input type="hidden" name="action" value="delete_track"><input type="hidden" name="track_id" value="<?php echo (int)$track['track_id']; ?>"><button class="btn danger" type="submit">Delete</button></form>

@@ -145,7 +145,7 @@ php backend/validate_setup.php
 Expected validator output:
 
 ```text
-Database setup is valid: 19 required tables, 4 reporting views, and all required columns found.
+Database setup is valid: 20 required tables, 4 reporting views, and all required columns found.
 ```
 
 The SQL file is imported only when the database volume is created. To destroy the local database and recreate it from the SQL file:
@@ -164,7 +164,7 @@ For an existing database, apply the updated `music_streaming_db.sql` migration t
 Start the PHP development server from the repository root:
 
 ```sh
-php -S 0.0.0.0:8000 -t .
+php -d upload_max_filesize=40M -d post_max_size=42M -S 0.0.0.0:8000 -t .
 ```
 
 Open:
@@ -294,7 +294,7 @@ php -r 'require "backend/db.php"; $pdo->beginTransaction(); $stmt=$pdo->prepare(
 
 ## Audio Files
 
-Uploaded audio is stored in `backend/uploads/audio/` and is ignored by Git. The administrator track form accepts MP3, WAV, OGG, and M4A-compatible uploads up to 50 MB.
+Uploaded audio is stored in `backend/uploads/audio/` and is ignored by Git. The administrator track form accepts MP3, WAV, OGG, and M4A-compatible uploads up to 35 MB. Add or replace audio from the administrator dashboard; the saved file is then available to the browser player.
 
 The SQL seed includes demo paths such as `/demo/audio/...`. Those paths are metadata placeholders unless matching files are supplied by the deployment. For reliable playback, upload real audio files through the administrator dashboard or replace the seeded `tracks.audio_url` values with URLs served by your media storage.
 

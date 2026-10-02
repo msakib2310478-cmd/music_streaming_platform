@@ -208,7 +208,7 @@ function storeUploadedAudio(array $file): string
     ];
     $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
     $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
-    if (!isset($allowedMimeTypes[$mimeType]) || !in_array($extension, ['mp3', 'wav', 'ogg', 'm4a', 'mp4'], true)) {
+    if (!isset($allowedMimeTypes[$mimeType]) || !in_array($extension, ['mp3', 'mpeg', 'wav', 'ogg', 'm4a', 'mp4'], true)) {
         throw new RuntimeException('Unsupported audio format detected: ' . $mimeType);
     }
 

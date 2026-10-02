@@ -4,7 +4,8 @@ require_once __DIR__ . '/db.php';
 $requiredTables = [
     'users', 'artists', 'albums', 'tracks', 'playlists', 'stream_history',
     'genres', 'track_genres', 'playlist_tracks', 'favorites', 'artist_follows',
-    'ratings', 'search_history', 'subscriptions', 'login_attempts', 'playback_queue',
+    'ratings', 'search_history', 'subscriptions', 'playback_queue', 'login_attempts',
+    'notifications',
     'playlist_collaborators', 'track_artists', 'artist_accounts',
 ];
 $requiredViews = [
@@ -12,6 +13,7 @@ $requiredViews = [
     'vw_trending_tracks', 'vw_artist_dashboard_metrics',
 ];
 $requiredColumns = [
+    'users' => ['first_name', 'last_name', 'display_name', 'country', 'bio', 'avatar_url'],
     'tracks' => ['audio_url', 'cover_image', 'lyrics'],
     'stream_history' => ['duration_played', 'completed'],
     'artists' => ['bio', 'profile_image', 'verified'],

@@ -1,9 +1,34 @@
 <?php
+$envFile = dirname(__DIR__) . '/.env';
+if (is_readable($envFile)) {
+    foreach (file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
+        $trimmed = trim($line);
+        if ($trimmed === '' || str_starts_with($trimmed, '#')) {
+            continue;
+        }
+
+        [$key, $value] = array_pad(explode('=', $line, 2), 2, '');
+        $key = trim($key);
+        $value = trim($value);
+
+        if ($key === '') {
+            continue;
+        }
+
+        $value = trim($value, " \t\n\r\0\x0B\"'");
+        if (!getenv($key)) {
+            putenv($key . '=' . $value);
+        }
+        $_ENV[$key] = $value;
+        $_SERVER[$key] = $value;
+    }
+}
+
 $host = getenv('MUSIC_DB_HOST') ?: '127.0.0.1';
 $port = getenv('MUSIC_DB_PORT') ?: '3306';
 $dbName = getenv('MUSIC_DB_NAME') ?: 'music_streaming_db';
-$dbUser = getenv('MUSIC_DB_USER') ?: 'music_app';
-$dbPass = getenv('MUSIC_DB_PASS') ?: 'music_app_local';
+$dbUser = getenv('MUSIC_DB_USER') ?: 'root';
+$dbPass = getenv('MUSIC_DB_PASS') ?: '';
 
 try {
     $pdo = new PDO(
